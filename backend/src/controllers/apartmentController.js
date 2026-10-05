@@ -27,6 +27,7 @@ const buildAdminFilter = (query) => {
   } = query;
 
   const filter = {};
+  const andConditions = [];
 
   /* =========================
      SEARCH
@@ -37,14 +38,16 @@ const buildAdminFilter = (query) => {
   if (keyword) {
     const safeKeyword = escapeRegex(keyword);
 
-    filter.$or = [
-      { title: { $regex: safeKeyword, $options: "i" } },
-      { address: { $regex: safeKeyword, $options: "i" } },
-      { ward: { $regex: safeKeyword, $options: "i" } },
-      { district: { $regex: safeKeyword, $options: "i" } },
-      { city: { $regex: safeKeyword, $options: "i" } },
-      { description: { $regex: safeKeyword, $options: "i" } },
-    ];
+    andConditions.push({
+      $or: [
+        { title: { $regex: safeKeyword, $options: "i" } },
+        { address: { $regex: safeKeyword, $options: "i" } },
+        { ward: { $regex: safeKeyword, $options: "i" } },
+        { district: { $regex: safeKeyword, $options: "i" } },
+        { city: { $regex: safeKeyword, $options: "i" } },
+        { description: { $regex: safeKeyword, $options: "i" } },
+      ],
+    });
   }
 
   /* =========================
@@ -70,51 +73,57 @@ const buildAdminFilter = (query) => {
   /* =========================
      BEDROOMS
   ========================= */
-if (bedrooms !== undefined && bedrooms !== "") {
-  const bedroomValues = String(bedrooms)
-    .split(",")
-    .map((value) => value.trim())
-    .filter(Boolean);
 
-  const exactBedrooms = [];
-  let hasThreePlus = false;
+  if (bedrooms !== undefined && bedrooms !== "" && bedrooms !== "all") {
+    const bedroomValues = String(bedrooms)
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean);
 
-  bedroomValues.forEach((value) => {
-    if (value === "3+") {
-      hasThreePlus = true;
-      return;
-    }
+    const exactBedrooms = [];
+    let hasThreePlus = false;
 
-    const number = Number(value);
+    bedroomValues.forEach((value) => {
+      if (value === "3+") {
+        hasThreePlus = true;
+        return;
+      }
 
-    if (Number.isFinite(number)) {
-      exactBedrooms.push(number);
-    }
-  });
+      const number = Number(value);
 
-  if (hasThreePlus && exactBedrooms.length > 0) {
-    filter.$or = [
-      {
+      if (Number.isFinite(number)) {
+        exactBedrooms.push(number);
+      }
+    });
+
+    const bedroomConditions = [];
+
+    if (exactBedrooms.length > 0) {
+      bedroomConditions.push({
         bedrooms: {
           $in: exactBedrooms,
         },
-      },
-      {
+      });
+    }
+
+    if (hasThreePlus) {
+      bedroomConditions.push({
         bedrooms: {
           $gte: 3,
         },
-      },
-    ];
-  } else if (hasThreePlus) {
-    filter.bedrooms = {
-      $gte: 3,
-    };
-  } else if (exactBedrooms.length > 0) {
-    filter.bedrooms = {
-      $in: exactBedrooms,
-    };
+      });
+    }
+
+    if (bedroomConditions.length === 1) {
+      andConditions.push(bedroomConditions[0]);
+    }
+
+    if (bedroomConditions.length > 1) {
+      andConditions.push({
+        $or: bedroomConditions,
+      });
+    }
   }
-}
 
   /* =========================
      PRICE
@@ -213,6 +222,14 @@ if (bedrooms !== undefined && bedrooms !== "") {
     filter.furnished = true;
   }
 
+  /* =========================
+     COMBINE AND CONDITIONS
+  ========================= */
+
+  if (andConditions.length > 0) {
+    filter.$and = andConditions;
+  }
+
   return filter;
 };
 
@@ -279,9 +296,9 @@ export const getApartments = async (req, res) => {
       sort = "price",
     } = req.query;
 
-    // =====================================================
-    // PAGINATION
-    // =====================================================
+    /* =====================================================
+       PAGINATION
+    ===================================================== */
 
     let safePage = Number(page);
 
@@ -299,34 +316,64 @@ export const getApartments = async (req, res) => {
 
     safeLimit = Math.min(Math.floor(safeLimit), 50);
 
-    // =====================================================
-    // FILTER
-    // =====================================================
+    /* =====================================================
+       FILTER
+    ===================================================== */
 
     const filter = {
       available: true,
     };
 
-    // =====================================================
-    // SEARCH
-    // =====================================================
+    /* =====================================================
+       SEARCH
+    ===================================================== */
 
     if (search?.trim()) {
       const safeKeyword = escapeRegex(search.trim());
 
       filter.$or = [
-        { title: { $regex: safeKeyword, $options: "i" } },
-        { address: { $regex: safeKeyword, $options: "i" } },
-        { ward: { $regex: safeKeyword, $options: "i" } },
-        { district: { $regex: safeKeyword, $options: "i" } },
-        { city: { $regex: safeKeyword, $options: "i" } },
-        { description: { $regex: safeKeyword, $options: "i" } },
+        {
+          title: {
+            $regex: safeKeyword,
+            $options: "i",
+          },
+        },
+        {
+          address: {
+            $regex: safeKeyword,
+            $options: "i",
+          },
+        },
+        {
+          ward: {
+            $regex: safeKeyword,
+            $options: "i",
+          },
+        },
+        {
+          district: {
+            $regex: safeKeyword,
+            $options: "i",
+          },
+        },
+        {
+          city: {
+            $regex: safeKeyword,
+            $options: "i",
+          },
+        },
+        {
+          description: {
+            $regex: safeKeyword,
+            $options: "i",
+          },
+        },
       ];
     }
 
-    // =====================================================
-    // PRICE
-    // =====================================================
+    /* =====================================================
+       PRICE
+    ===================================================== */
 
     if (minPrice || maxPrice) {
       const price = {};
@@ -352,9 +399,9 @@ export const getApartments = async (req, res) => {
       }
     }
 
-    // =====================================================
-    // BEDROOMS
-    // =====================================================
+    /* =====================================================
+       BEDROOMS
+    ===================================================== */
 
     if (bedrooms !== undefined && bedrooms !== "") {
       const bedroomValues = String(bedrooms)
@@ -409,9 +456,9 @@ export const getApartments = async (req, res) => {
       }
     }
 
-    // =====================================================
-    // BATHROOMS
-    // =====================================================
+    /* =====================================================
+       BATHROOMS
+    ===================================================== */
 
     if (bathrooms !== undefined && bathrooms !== "") {
       const value = Number(bathrooms);
@@ -421,9 +468,9 @@ export const getApartments = async (req, res) => {
       }
     }
 
-    // =====================================================
-    // MAX OCCUPANTS
-    // =====================================================
+    /* =====================================================
+       MAX OCCUPANTS
+    ===================================================== */
 
     if (maxOccupants !== undefined && maxOccupants !== "") {
       const value = Number(maxOccupants);
@@ -435,9 +482,9 @@ export const getApartments = async (req, res) => {
       }
     }
 
-    // =====================================================
-    // DISTRICT
-    // =====================================================
+    /* =====================================================
+       DISTRICT
+    ===================================================== */
 
     if (district?.trim()) {
       filter.district = {
@@ -446,9 +493,9 @@ export const getApartments = async (req, res) => {
       };
     }
 
-    // =====================================================
-    // AREA
-    // =====================================================
+    /* =====================================================
+       AREA
+    ===================================================== */
 
     if (minArea || maxArea) {
       const area = {};
@@ -474,9 +521,9 @@ export const getApartments = async (req, res) => {
       }
     }
 
-    // =====================================================
-    // FACILITIES
-    // =====================================================
+    /* =====================================================
+       FACILITIES
+    ===================================================== */
 
     if (furnished === "true") {
       filter.furnished = true;
@@ -494,9 +541,9 @@ export const getApartments = async (req, res) => {
       filter.pool = true;
     }
 
-    // =====================================================
-    // SORT
-    // =====================================================
+    /* =====================================================
+       SORT
+    ===================================================== */
 
     let sortOption = {
       price: 1,
@@ -523,16 +570,17 @@ export const getApartments = async (req, res) => {
       };
     }
 
-    // =====================================================
-    // PAGINATION
-    // =====================================================
+    /* =====================================================
+       PAGINATION
+    ===================================================== */
 
     const skip = (safePage - 1) * safeLimit;
 
-    // =====================================================
-    // LISTING PROJECTION
-    // Không lấy description + các field không cần thiết
-    // =====================================================
+    /* =====================================================
+       LISTING PROJECTION
+       
+       Không lấy description + các field không cần thiết
+    ===================================================== */
 
     const listingProjection = {
       title: 1,
@@ -556,9 +604,23 @@ export const getApartments = async (req, res) => {
       createdAt: 1,
     };
 
-    // =====================================================
-    // COUNT + DATA CHẠY SONG SONG
-    // =====================================================
+    /* =====================================================
+       DB PERFORMANCE TEST
+       
+       Chỉ đo khi request có:
+       X-Load-Test: true
+
+       Không ảnh hưởng request bình thường.
+    ===================================================== */
+
+    const isLoadTest =
+      req.headers["x-load-test"] === "true";
+
+    const dbStart = Date.now();
+
+    /* =====================================================
+       COUNT + DATA CHẠY SONG SONG
+    ===================================================== */
 
     const [total, apartments] = await Promise.all([
       Apartment.countDocuments(filter),
@@ -571,24 +633,40 @@ export const getApartments = async (req, res) => {
         .lean(),
     ]);
 
-    // =====================================================
-    // PAGINATION RESULT
-    // =====================================================
+    const dbTime = Date.now() - dbStart;
+
+    /* =====================================================
+       PERFORMANCE HEADER
+    ===================================================== */
+
+    if (isLoadTest) {
+      res.set(
+        "X-DB-Time",
+        String(dbTime),
+      );
+    }
+
+    /* =====================================================
+       PAGINATION RESULT
+    ===================================================== */
 
     const totalPages =
-      total === 0 ? 0 : Math.ceil(total / safeLimit);
+      total === 0
+        ? 0
+        : Math.ceil(total / safeLimit);
 
     const actualPage =
       totalPages > 0
         ? Math.min(safePage, totalPages)
         : 1;
 
-    // Nếu frontend yêu cầu page quá lớn,
-    // query phía trên có thể trả [].
-    // Ta giữ pagination hiện tại đơn giản và ổn định.
+    /* =====================================================
+       RESPONSE
+    ===================================================== */
 
     res.json({
       apartments,
+
       pagination: {
         page: actualPage,
         limit: safeLimit,
@@ -599,7 +677,10 @@ export const getApartments = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("GET APARTMENTS ERROR:", error);
+    console.error(
+      "GET APARTMENTS ERROR:",
+      error,
+    );
 
     res.status(500).json({
       message: "Failed to get apartments",
@@ -613,23 +694,9 @@ export const getApartments = async (req, res) => {
 
 export const getApartmentById = async (req, res) => {
   try {
-    const dbStart = Date.now();
-
-const [total, apartments] = await Promise.all([
-  Apartment.countDocuments(filter),
-  Apartment.find(filter)
-    .select(listingProjection)
-    .sort(sortOption)
-    .skip(skip)
-    .limit(safeLimit)
-    .lean(),
-]);
-
-const dbTime = Date.now() - dbStart;
-
-console.log(
-  `[GET /apartments] db=${dbTime}ms total=${total} rows=${apartments.length}`
-);
+    const apartment = await Apartment.findById(
+      req.params.id,
+    ).lean();
 
     if (!apartment) {
       return res.status(404).json({
@@ -639,7 +706,10 @@ console.log(
 
     res.json(apartment);
   } catch (error) {
-    console.error("GET APARTMENT ERROR:", error);
+    console.error(
+      "GET APARTMENT ERROR:",
+      error,
+    );
 
     res.status(500).json({
       message: error.message,
@@ -653,13 +723,23 @@ console.log(
 
 export const getDistricts = async (req, res) => {
   try {
-    const districts = await Apartment.distinct("district", {
-      available: true,
-    });
+    const districts = await Apartment.distinct(
+      "district",
+      {
+        available: true,
+      },
+    );
 
-    res.json(districts.filter(Boolean).sort());
+    res.json(
+      districts
+        .filter(Boolean)
+        .sort(),
+    );
   } catch (error) {
-    console.error("GET DISTRICTS ERROR:", error);
+    console.error(
+      "GET DISTRICTS ERROR:",
+      error,
+    );
 
     res.status(500).json({
       message: error.message,
@@ -671,9 +751,16 @@ export const getDistricts = async (req, res) => {
    ADMIN - GET ALL WITH PAGINATION
 ========================================================= */
 
-export const getAllApartmentsAdmin = async (req, res) => {
+export const getAllApartmentsAdmin = async (
+  req,
+  res,
+) => {
   try {
-    const { page = 1, limit = 20, sort = "newest" } = req.query;
+    const {
+      page = 1,
+      limit = 20,
+      sort = "newest",
+    } = req.query;
 
     /* =========================
        PAGINATION
@@ -681,7 +768,10 @@ export const getAllApartmentsAdmin = async (req, res) => {
 
     let safePage = Number(page);
 
-    if (!Number.isFinite(safePage) || safePage < 1) {
+    if (
+      !Number.isFinite(safePage) ||
+      safePage < 1
+    ) {
       safePage = 1;
     }
 
@@ -689,19 +779,23 @@ export const getAllApartmentsAdmin = async (req, res) => {
 
     let safeLimit = Number(limit);
 
-    if (!Number.isFinite(safeLimit) || safeLimit < 1) {
+    if (
+      !Number.isFinite(safeLimit) ||
+      safeLimit < 1
+    ) {
       safeLimit = 20;
     }
 
     safeLimit = Math.floor(safeLimit);
-
     safeLimit = Math.min(safeLimit, 50);
 
     /* =========================
        FILTER
     ========================= */
 
-    const filter = buildAdminFilter(req.query);
+    const filter = buildAdminFilter(
+      req.query,
+    );
 
     /* =========================
        SORT
@@ -713,42 +807,62 @@ export const getAllApartmentsAdmin = async (req, res) => {
        TOTAL FILTERED
     ========================= */
 
-    const total = await Apartment.countDocuments(filter);
+    const total =
+      await Apartment.countDocuments(
+        filter,
+      );
 
-    const totalPages = total === 0 ? 0 : Math.ceil(total / safeLimit);
+    const totalPages =
+      total === 0
+        ? 0
+        : Math.ceil(total / safeLimit);
 
-    const actualPage = totalPages > 0 ? Math.min(safePage, totalPages) : 1;
+    const actualPage =
+      totalPages > 0
+        ? Math.min(
+            safePage,
+            totalPages,
+          )
+        : 1;
 
-    const skip = (actualPage - 1) * safeLimit;
+    const skip =
+      (actualPage - 1) *
+      safeLimit;
 
     /* =========================
        ALL DATA / STATS
     ========================= */
 
-    const [apartments, available, hidden, petFriendly, totalAll, districts] =
-      await Promise.all([
-        Apartment.find(filter)
-          .sort(sortOption)
-          .skip(skip)
-          .limit(safeLimit)
-          .lean(),
+    const [
+      apartments,
+      available,
+      hidden,
+      petFriendly,
+      totalAll,
+      districts,
+    ] = await Promise.all([
+      Apartment.find(filter)
+        .sort(sortOption)
+        .skip(skip)
+        .limit(safeLimit)
+        .lean(),
 
-        Apartment.countDocuments({
-          available: true,
-        }),
+      Apartment.countDocuments({
+        available: true,
+      }),
 
-        Apartment.countDocuments({
-          available: false,
-        }),
+      Apartment.countDocuments({
+        available: false,
+      }),
 
-        Apartment.countDocuments({
-          petFriendly: true,
-        }),
+      Apartment.countDocuments({
+        petFriendly: true,
+      }),
 
-        Apartment.countDocuments({}),
+      Apartment.countDocuments({}),
 
-        Apartment.distinct("district"),
-      ]);
+      Apartment.distinct("district"),
+    ]);
 
     /* =========================
        RESPONSE
@@ -762,8 +876,10 @@ export const getAllApartmentsAdmin = async (req, res) => {
         limit: safeLimit,
         total,
         totalPages,
-        hasNextPage: actualPage < totalPages,
-        hasPrevPage: actualPage > 1,
+        hasNextPage:
+          actualPage < totalPages,
+        hasPrevPage:
+          actualPage > 1,
       },
 
       stats: {
@@ -773,10 +889,16 @@ export const getAllApartmentsAdmin = async (req, res) => {
         petFriendly,
       },
 
-      districts: districts.filter(Boolean).sort(),
+      districts:
+        districts
+          .filter(Boolean)
+          .sort(),
     });
   } catch (error) {
-    console.error("GET ADMIN APARTMENTS ERROR:", error);
+    console.error(
+      "GET ADMIN APARTMENTS ERROR:",
+      error,
+    );
 
     res.status(500).json({
       message: error.message,
@@ -788,16 +910,26 @@ export const getAllApartmentsAdmin = async (req, res) => {
    CREATE
 ========================================================= */
 
-export const createApartment = async (req, res) => {
+export const createApartment = async (
+  req,
+  res,
+) => {
   try {
-    const apartment = await Apartment.create(req.body);
+    const apartment =
+      await Apartment.create(
+        req.body,
+      );
 
     res.status(201).json({
-      message: "Apartment created successfully",
+      message:
+        "Apartment created successfully",
       apartment,
     });
   } catch (error) {
-    console.error("CREATE APARTMENT ERROR:", error);
+    console.error(
+      "CREATE APARTMENT ERROR:",
+      error,
+    );
 
     res.status(500).json({
       message: error.message,
@@ -809,29 +941,38 @@ export const createApartment = async (req, res) => {
    UPDATE
 ========================================================= */
 
-export const updateApartment = async (req, res) => {
+export const updateApartment = async (
+  req,
+  res,
+) => {
   try {
-    const apartment = await Apartment.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      {
-        new: true,
-        runValidators: true,
-      },
-    );
+    const apartment =
+      await Apartment.findByIdAndUpdate(
+        req.params.id,
+        req.body,
+        {
+          new: true,
+          runValidators: true,
+        },
+      );
 
     if (!apartment) {
       return res.status(404).json({
-        message: "Apartment not found",
+        message:
+          "Apartment not found",
       });
     }
 
     res.json({
-      message: "Apartment updated successfully",
+      message:
+        "Apartment updated successfully",
       apartment,
     });
   } catch (error) {
-    console.error("UPDATE APARTMENT ERROR:", error);
+    console.error(
+      "UPDATE APARTMENT ERROR:",
+      error,
+    );
 
     res.status(500).json({
       message: error.message,
@@ -843,21 +984,32 @@ export const updateApartment = async (req, res) => {
    DELETE
 ========================================================= */
 
-export const deleteApartment = async (req, res) => {
+export const deleteApartment = async (
+  req,
+  res,
+) => {
   try {
-    const apartment = await Apartment.findByIdAndDelete(req.params.id);
+    const apartment =
+      await Apartment.findByIdAndDelete(
+        req.params.id,
+      );
 
     if (!apartment) {
       return res.status(404).json({
-        message: "Apartment not found",
+        message:
+          "Apartment not found",
       });
     }
 
     res.json({
-      message: "Apartment deleted successfully",
+      message:
+        "Apartment deleted successfully",
     });
   } catch (error) {
-    console.error("DELETE APARTMENT ERROR:", error);
+    console.error(
+      "DELETE APARTMENT ERROR:",
+      error,
+    );
 
     res.status(500).json({
       message: error.message,
@@ -869,60 +1021,85 @@ export const deleteApartment = async (req, res) => {
    UPDATE AVAILABILITY
 ========================================================= */
 
-export const updateAvailability = async (req, res) => {
+export const updateAvailability = async (
+  req,
+  res,
+) => {
   try {
     const { available } = req.body;
 
-    if (typeof available !== "boolean") {
+    if (
+      typeof available !== "boolean"
+    ) {
       return res.status(400).json({
-        message: "available phải là true hoặc false",
+        message:
+          "available phải là true hoặc false",
       });
     }
 
-    const apartment = await Apartment.findByIdAndUpdate(
-      req.params.id,
-      {
-        available,
-      },
-      {
-        new: true,
-        runValidators: true,
-      },
-    );
+    const apartment =
+      await Apartment.findByIdAndUpdate(
+        req.params.id,
+        {
+          available,
+        },
+        {
+          new: true,
+          runValidators: true,
+        },
+      );
 
     if (!apartment) {
       return res.status(404).json({
-        message: "Apartment not found",
+        message:
+          "Apartment not found",
       });
     }
 
     res.json({
-      message: "Availability updated successfully",
+      message:
+        "Availability updated successfully",
       apartment,
     });
   } catch (error) {
-    console.error("UPDATE AVAILABILITY ERROR:", error);
+    console.error(
+      "UPDATE AVAILABILITY ERROR:",
+      error,
+    );
 
     res.status(500).json({
       message: error.message,
     });
   }
 };
-export const testApartmentsFast = async (req, res) => {
+
+/* =========================================================
+   TEMP - FAST APARTMENT TEST
+========================================================= */
+
+export const testApartmentsFast = async (
+  req,
+  res,
+) => {
   try {
-    const apartments = await Apartment.find({})
-      .limit(9)
-      .lean();
+    const apartments =
+      await Apartment.find({})
+        .limit(9)
+        .lean();
 
     res.json({
       count: apartments.length,
       apartments,
     });
   } catch (error) {
-    console.error("Test apartments fast error:", error);
+    console.error(
+      "Test apartments fast error:",
+      error,
+    );
 
     res.status(500).json({
-      message: "Test apartments failed",
+      message:
+        "Test apartments failed",
     });
   }
 };
