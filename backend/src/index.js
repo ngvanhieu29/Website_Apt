@@ -37,14 +37,12 @@ app.use(
 // thêm domain Vercel vào danh sách này.
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://website-apt-five.vercel.app/",
+  "https://website-apt-five.vercel.app",
 ];
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Cho phép request không có Origin
-      // Ví dụ: Postman / server-to-server
       if (!origin) {
         return callback(null, true);
       }
@@ -63,7 +61,6 @@ app.use(
     credentials: false,
   }),
 );
-
 /* =========================================================
    BODY LIMIT
 ========================================================= */
