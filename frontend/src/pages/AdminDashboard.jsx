@@ -54,7 +54,7 @@ const EMPTY_FORM = {
   maxOccupants: "",
   rooms: "",
   furnished: true,
-  amenities: "",
+  amenities: [],
   description: "",
   images: [],
   available: true,
@@ -135,9 +135,7 @@ const getInitialForm = (apartment = null) => {
     maxOccupants: apartment.maxOccupants ?? "",
     rooms: apartment.rooms ?? "",
     furnished: apartment.furnished ?? true,
-    amenities: Array.isArray(apartment.amenities)
-      ? apartment.amenities.join(", ")
-      : "",
+    amenities: Array.isArray(apartment.amenities) ? apartment.amenities : [],
     description: apartment.description || "",
     images: normalizeImages(apartment.images),
     available: apartment.available ?? true,
@@ -492,10 +490,7 @@ export default function AdminDashboard() {
 
         furnished: Boolean(form.furnished),
 
-        amenities: form.amenities
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean),
+        amenities: form.amenities,
 
         description: form.description.trim(),
 
@@ -1295,7 +1290,9 @@ export default function AdminDashboard() {
 
                     <div className="flex flex-wrap gap-2 mt-3">
                       <DetailBadge icon={<BedDouble size={13} />}>
-                        {apartment.bedrooms} BR
+                        {apartment.bedrooms === 0
+                          ? "Studio"
+                          : `${apartment.bedrooms} BR`}
                       </DetailBadge>
 
                       <DetailBadge icon={<Bath size={13} />}>
@@ -1677,13 +1674,54 @@ export default function AdminDashboard() {
                 {/* AMENITIES */}
 
                 <div className="md:col-span-2">
-                  <FormTextarea
-                    label="Amenities"
-                    value={form.amenities}
-                    onChange={(value) => handleChange("amenities", value)}
-                    placeholder="Balcony, Washing machine, Refrigerator, WiFi"
-                    rows={2}
-                  />
+                  <h3 className="mb-3 text-sm font-bold text-slate-900">
+                    Amenities
+                  </h3>
+
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    {[
+                      "Balcony",
+                      "Bright",
+                      "Cozy",
+                      "Gym",
+                      "Sauna",
+                      "Modern",
+                      "Pool",
+                      "Near Beach",
+                      "Soundproofing",
+                    ].map((amenity) => {
+                      const checked = form.amenities.includes(amenity);
+
+                      return (
+                        <label
+                          key={amenity}
+                          className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2.5 text-sm transition ${
+                            checked
+                              ? "border-slate-900 bg-slate-50 text-slate-900"
+                              : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => {
+                              setForm((prev) => ({
+                                ...prev,
+                                amenities: checked
+                                  ? prev.amenities.filter(
+                                      (item) => item !== amenity,
+                                    )
+                                  : [...prev.amenities, amenity],
+                              }));
+                            }}
+                            className="w-4 h-4 rounded border-slate-300"
+                          />
+
+                          <span>{amenity}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* DESCRIPTION */}

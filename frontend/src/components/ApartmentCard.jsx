@@ -117,9 +117,13 @@ export default function ApartmentCard({ apartment }) {
         </p>
 
         {/* Stats */}
-        <div className="flex items-center gap-4 text-sm text-slate-600">
-          <div className="flex items-center gap-1.5" title="Bedrooms">
-            <Bed className="w-4 h-4 text-slate-400" />
+
+        <div className="flex items-center justify-between gap-2 text-sm text-slate-600">
+          <div
+            className="flex shrink-0 items-center gap-1.5 whitespace-nowrap"
+            title="Bedrooms"
+          >
+            <Bed className="w-4 h-4 shrink-0 text-slate-400" />
 
             <span>
               {bedrooms === 0
@@ -128,20 +132,29 @@ export default function ApartmentCard({ apartment }) {
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5" title="Bathrooms">
-            <Bath className="w-4 h-4 text-slate-400" />
+          <div
+            className="flex shrink-0 items-center gap-1.5 whitespace-nowrap"
+            title="Bathrooms"
+          >
+            <Bath className="w-4 h-4 shrink-0 text-slate-400" />
 
             <span>{bathrooms}</span>
           </div>
 
-          <div className="flex items-center gap-1.5" title="Area">
-            <Maximize className="w-4 h-4 text-slate-400" />
+          <div
+            className="flex shrink-0 items-center gap-1.5 whitespace-nowrap"
+            title="Area"
+          >
+            <Maximize className="w-4 h-4 shrink-0 text-slate-400" />
 
             <span>{area} m²</span>
           </div>
 
-          <div className="flex items-center gap-1.5" title="Max occupants">
-            <Users className="w-4 h-4 text-slate-400" />
+          <div
+            className="flex shrink-0 items-center gap-1.5 whitespace-nowrap"
+            title="Max occupants"
+          >
+            <Users className="w-4 h-4 shrink-0 text-slate-400" />
 
             <span>{maxOccupants}</span>
           </div>
