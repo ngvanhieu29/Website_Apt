@@ -847,3 +847,21 @@ export const updateAvailability = async (req, res) => {
     });
   }
 };
+export const testApartmentsFast = async (req, res) => {
+  try {
+    const apartments = await Apartment.find({})
+      .limit(9)
+      .lean();
+
+    res.json({
+      count: apartments.length,
+      apartments,
+    });
+  } catch (error) {
+    console.error("Test apartments fast error:", error);
+
+    res.status(500).json({
+      message: "Test apartments failed",
+    });
+  }
+};

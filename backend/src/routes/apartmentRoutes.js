@@ -9,6 +9,7 @@ import {
   updateApartment,
   deleteApartment,
   updateAvailability,
+  testApartmentsFast,
 } from '../controllers/apartmentController.js';
 
 import { adminAuth } from '../middleware/adminMiddleware.js';
@@ -32,7 +33,7 @@ router.get(
   adminAuth,
   getAllApartmentsAdmin
 );
-
+router.get("/test-fast", testApartmentsFast);
 router.post('/', adminAuth, createApartment);
 
 router.put('/:id', adminAuth, updateApartment);
