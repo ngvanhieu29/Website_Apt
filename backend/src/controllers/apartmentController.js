@@ -606,19 +606,12 @@ export const getApartments = async (req, res) => {
       createdAt: 1,
     };
 
-    /* =====================================================
-       DB PERFORMANCE TEST
-       
-       Chỉ đo khi request có:
-       X-Load-Test: true
 
-       Không ảnh hưởng request bình thường.
-    ===================================================== */
 
-    const isLoadTest =
-      req.headers["x-load-test"] === "true";
 
-    const dbStart = Date.now();
+ 
+
+  
 
     /* =====================================================
        COUNT + DATA CHẠY SONG SONG
@@ -635,18 +628,7 @@ export const getApartments = async (req, res) => {
         .lean(),
     ]);
 
-    const dbTime = Date.now() - dbStart;
-
-    /* =====================================================
-       PERFORMANCE HEADER
-    ===================================================== */
-
-    if (isLoadTest) {
-      res.set(
-        "X-DB-Time",
-        String(dbTime),
-      );
-    }
+ 
 
     /* =====================================================
        PAGINATION RESULT

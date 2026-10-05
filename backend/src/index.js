@@ -73,10 +73,6 @@ const publicApiLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 
-  skip: (req) => {
-    return req.headers["x-load-test"] === "true";
-  },
-
   message: {
     message: "Bạn gửi quá nhiều request. Vui lòng thử lại sau.",
   },
