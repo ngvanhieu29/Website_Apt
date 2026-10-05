@@ -120,7 +120,13 @@ app.get("/", (req, res) => {
     message: "Apartment Rental API is running",
   });
 });
-
+app.get("/api/health", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    message: "Server is running",
+    timestamp: new Date().toISOString(),
+  });
+});
 /* =========================================================
    404 HANDLER
 ========================================================= */
