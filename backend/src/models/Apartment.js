@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const apartmentSchema = new mongoose.Schema(
   {
@@ -28,7 +28,7 @@ const apartmentSchema = new mongoose.Schema(
 
     city: {
       type: String,
-      default: 'Da Nang',
+      default: "Da Nang",
     },
 
     price: {
@@ -80,21 +80,21 @@ const apartmentSchema = new mongoose.Schema(
 
     description: {
       type: String,
-      default: '',
+      default: "",
     },
 
     images: [
-  {
-    url: {
-      type: String,
-      required: true,
-    },
-    publicId: {
-      type: String,
-      required: true,
-    },
-  },
-],
+      {
+        url: {
+          type: String,
+          required: true,
+        },
+        publicId: {
+          type: String,
+          required: true,
+        },
+      },
+    ],
 
     available: {
       type: Boolean,
@@ -118,8 +118,54 @@ const apartmentSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-    collection: 'apartments',
-  }
+    collection: "apartments",
+  },
 );
+// =====================================================
+// DATABASE INDEXES
+// =====================================================
 
-export default mongoose.model('Apartment', apartmentSchema);
+// Public listing:
+// available + price + newest
+apartmentSchema.index({
+  available: 1,
+  price: 1,
+  createdAt: -1,
+});
+
+// Public filter theo khu vực + giá
+apartmentSchema.index({
+  available: 1,
+  district: 1,
+  price: 1,
+});
+
+// Public filter theo số phòng ngủ
+apartmentSchema.index({
+  available: 1,
+  bedrooms: 1,
+});
+
+// Public sort căn mới nhất
+apartmentSchema.index({
+  available: 1,
+  createdAt: -1,
+});
+
+// Admin filter/sort
+apartmentSchema.index({
+  district: 1,
+  price: 1,
+});
+
+// Admin sort theo diện tích
+apartmentSchema.index({
+  area: 1,
+  createdAt: -1,
+});
+
+apartmentSchema.index({
+  area: -1,
+  createdAt: -1,
+});
+export default mongoose.model("Apartment", apartmentSchema);

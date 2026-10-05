@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link } from "react-router-dom";
 import {
   Building2,
   Menu,
@@ -6,11 +6,11 @@ import {
   QrCode,
   ExternalLink,
   ChevronDown,
-} from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
-import { QRCodeSVG } from 'qrcode.react';
+} from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { QRCodeSVG } from "qrcode.react";
 
-const TELEGRAM_LINK = 'https://t.me/+katg_N5Zo001YmU9';
+const TELEGRAM_LINK = "https://t.me/+katg_N5Zo001YmU9";
 
 export default function Header({ onOpenContact }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -22,18 +22,15 @@ export default function Header({ onOpenContact }) {
   // Đóng dropdown desktop khi click ra ngoài
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (
-        groupRef.current &&
-        !groupRef.current.contains(event.target)
-      ) {
+      if (groupRef.current && !groupRef.current.contains(event.target)) {
         setDesktopGroupOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
@@ -45,22 +42,17 @@ export default function Header({ onOpenContact }) {
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-100 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
+      <header className="sticky top-0 z-50 border-b shadow-sm bg-white/90 backdrop-blur-md border-slate-100">
+        <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 md:h-20">
-
             {/* LOGO */}
-            <Link
-              to="/"
-              className="flex items-center gap-2.5 group"
-            >
-              <div className="bg-gradient-to-br from-primary-600 to-primary-800 p-2 rounded-xl shadow-md group-hover:shadow-lg transition">
+            <Link to="/" className="flex items-center gap-2.5 group">
+              <div className="p-2 transition shadow-md bg-gradient-to-br from-primary-600 to-primary-800 rounded-xl group-hover:shadow-lg">
                 <Building2 className="w-6 h-6 text-white" />
               </div>
 
               <div>
-                <span className="font-display text-xl md:text-2xl font-bold text-slate-900 tracking-tight">
+                <span className="text-xl font-bold tracking-tight font-display md:text-2xl text-slate-900">
                   DaNangStay<span className="text-primary-600">Hub</span>
                 </span>
 
@@ -71,39 +63,32 @@ export default function Header({ onOpenContact }) {
             </Link>
 
             {/* ================= DESKTOP ================= */}
-            <nav className="hidden md:flex items-center gap-6">
-
+            <nav className="items-center hidden gap-6 md:flex">
               <Link
                 to="/"
-                className="text-slate-600 hover:text-primary-600 font-medium transition"
+                className="font-medium transition text-slate-600 hover:text-primary-600"
               >
                 Apartments
               </Link>
 
               <Link
                 to="/about"
-                className="text-slate-600 hover:text-primary-600 font-medium transition"
+                className="font-medium transition text-slate-600 hover:text-primary-600"
               >
-                About
+                About Us
               </Link>
 
               {/* OUR GROUP */}
-              <div
-                ref={groupRef}
-                className="relative"
-              >
+              <div ref={groupRef} className="relative">
                 <button
                   type="button"
-                  onClick={() =>
-                    setDesktopGroupOpen((prev) => !prev)
-                  }
+                  onClick={() => setDesktopGroupOpen((prev) => !prev)}
                   className="inline-flex items-center gap-1.5 text-slate-600 hover:text-primary-600 font-medium transition"
                 >
                   Our Group
-
                   <ChevronDown
                     className={`w-4 h-4 transition-transform duration-200 ${
-                      desktopGroupOpen ? 'rotate-180' : ''
+                      desktopGroupOpen ? "rotate-180" : ""
                     }`}
                   />
                 </button>
@@ -111,17 +96,13 @@ export default function Header({ onOpenContact }) {
                 {/* DROPDOWN */}
                 {desktopGroupOpen && (
                   <div className="absolute right-0 top-full mt-4 w-80 bg-white rounded-2xl border border-slate-200 shadow-2xl p-5 z-[9999]">
-
                     <div className="text-center">
-
-                      
-
                       <h3 className="text-lg font-bold text-slate-900">
                         Join Our Group
                       </h3>
 
-                      <p className="text-xs text-slate-500 mt-1 mb-4">
-                        Connect with DaNangStay on Telegram
+                      <p className="mt-1 mb-4 text-xs text-slate-500">
+                        Connect with DaNangStayHub on Telegram
                       </p>
 
                       {/* QR */}
@@ -137,12 +118,12 @@ export default function Header({ onOpenContact }) {
                       </div>
 
                       {/* LINK */}
-                      <div className="bg-slate-50 rounded-xl p-3 mb-3 text-left">
+                      <div className="p-3 mb-3 text-left bg-slate-50 rounded-xl">
                         <p className="text-[11px] text-slate-500 mb-1">
                           Telegram Group
                         </p>
 
-                        <p className="text-sm font-medium text-slate-700 truncate">
+                        <p className="text-sm font-medium truncate text-slate-700">
                           t.me/+katg_N5Zo001YmU9
                         </p>
                       </div>
@@ -152,13 +133,12 @@ export default function Header({ onOpenContact }) {
                         href={TELEGRAM_LINK}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="btn-primary w-full inline-flex items-center justify-center gap-2 text-sm"
+                        className="inline-flex items-center justify-center w-full gap-2 text-sm btn-primary"
                         onClick={() => setDesktopGroupOpen(false)}
                       >
                         Open Telegram
                         <ExternalLink className="w-4 h-4" />
                       </a>
-
                     </div>
                   </div>
                 )}
@@ -168,17 +148,16 @@ export default function Header({ onOpenContact }) {
               <button
                 type="button"
                 onClick={onOpenContact}
-                className="btn-primary text-sm"
+                className="text-sm btn-primary"
               >
                 Contact
               </button>
-
             </nav>
 
             {/* ================= MOBILE BUTTON ================= */}
             <button
               type="button"
-              className="md:hidden p-2 rounded-lg hover:bg-slate-100"
+              className="p-2 rounded-lg md:hidden hover:bg-slate-100"
               onClick={() => {
                 setMobileOpen((prev) => !prev);
                 setMobileGroupOpen(false);
@@ -191,20 +170,17 @@ export default function Header({ onOpenContact }) {
                 <Menu className="w-6 h-6" />
               )}
             </button>
-
           </div>
         </div>
 
         {/* ================= MOBILE MENU ================= */}
         {mobileOpen && (
-          <div className="md:hidden border-t border-slate-100 bg-white">
-
+          <div className="bg-white border-t md:hidden border-slate-100">
             <div className="px-4 py-4 space-y-1">
-
               {/* Apartments */}
               <Link
                 to="/"
-                className="block py-3 text-slate-700 font-medium"
+                className="block py-3 font-medium text-slate-700"
                 onClick={closeMobileMenu}
               >
                 Apartments
@@ -213,49 +189,40 @@ export default function Header({ onOpenContact }) {
               {/* About */}
               <Link
                 to="/about"
-                className="block py-3 text-slate-700 font-medium"
+                className="block py-3 font-medium text-slate-700"
                 onClick={closeMobileMenu}
               >
-                About
+                About Us
               </Link>
 
               {/* OUR GROUP */}
               <button
                 type="button"
-                className="flex items-center justify-between w-full py-3 text-slate-700 font-medium"
-                onClick={() =>
-                  setMobileGroupOpen((prev) => !prev)
-                }
+                className="flex items-center justify-between w-full py-3 font-medium text-slate-700"
+                onClick={() => setMobileGroupOpen((prev) => !prev)}
               >
-                <span className="flex items-center gap-2">
-                  
-                  Our Group
-                </span>
+                <span className="flex items-center gap-2">Our Group</span>
 
                 <ChevronDown
                   className={`w-4 h-4 transition-transform duration-200 ${
-                    mobileGroupOpen ? 'rotate-180' : ''
+                    mobileGroupOpen ? "rotate-180" : ""
                   }`}
                 />
               </button>
 
               {/* MOBILE GROUP CONTENT */}
               {mobileGroupOpen && (
-                <div className="bg-slate-50 rounded-xl p-4 mt-1 mb-2">
-
+                <div className="p-4 mt-1 mb-2 bg-slate-50 rounded-xl">
                   <div className="text-center">
+                    <h3 className="font-bold text-slate-900">Join Our Group</h3>
 
-                    <h3 className="font-bold text-slate-900">
-                      Join Our Group
-                    </h3>
-
-                    <p className="text-xs text-slate-500 mt-1 mb-4">
+                    <p className="mt-1 mb-4 text-xs text-slate-500">
                       Scan to join our Telegram group
                     </p>
 
                     {/* QR */}
                     <div className="flex justify-center mb-4">
-                      <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-sm">
+                      <div className="p-3 bg-white border shadow-sm rounded-xl border-slate-200">
                         <QRCodeSVG
                           value={TELEGRAM_LINK}
                           size={180}
@@ -266,12 +233,12 @@ export default function Header({ onOpenContact }) {
                     </div>
 
                     {/* Telegram URL */}
-                    <div className="bg-white rounded-lg p-3 mb-3 border border-slate-200">
-                      <p className="text-xs text-slate-500 mb-1">
+                    <div className="p-3 mb-3 bg-white border rounded-lg border-slate-200">
+                      <p className="mb-1 text-xs text-slate-500">
                         Telegram Group
                       </p>
 
-                      <p className="text-sm text-slate-700 break-all">
+                      <p className="text-sm break-all text-slate-700">
                         t.me/+katg_N5Zo001YmU9
                       </p>
                     </div>
@@ -281,7 +248,7 @@ export default function Header({ onOpenContact }) {
                       href={TELEGRAM_LINK}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="btn-primary w-full inline-flex items-center justify-center gap-2 text-sm"
+                      className="inline-flex items-center justify-center w-full gap-2 text-sm btn-primary"
                       onClick={() => {
                         setMobileGroupOpen(false);
                         setMobileOpen(false);
@@ -290,7 +257,6 @@ export default function Header({ onOpenContact }) {
                       Open Telegram
                       <ExternalLink className="w-4 h-4" />
                     </a>
-
                   </div>
                 </div>
               )}
@@ -298,7 +264,7 @@ export default function Header({ onOpenContact }) {
               {/* CONTACT */}
               <button
                 type="button"
-                className="block w-full text-left py-3 text-slate-700 font-medium"
+                className="block w-full py-3 font-medium text-left text-slate-700"
                 onClick={() => {
                   closeMobileMenu();
                   onOpenContact();
@@ -306,7 +272,6 @@ export default function Header({ onOpenContact }) {
               >
                 Contact
               </button>
-
             </div>
           </div>
         )}

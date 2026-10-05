@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from "react";
 import {
   Pencil,
   Trash2,
@@ -29,7 +29,7 @@ import {
   ImagePlus,
   Upload,
   Image as ImageIcon,
-} from 'lucide-react';
+} from "lucide-react";
 
 import {
   getAdminApartments,
@@ -39,23 +39,23 @@ import {
   updateAvailability,
   uploadImages,
   deleteImage,
-} from '../api/admin';
+} from "../api/admin";
 
 const EMPTY_FORM = {
-  title: '',
-  address: '',
-  ward: '',
-  district: '',
-  city: 'Da Nang',
-  price: '',
-  area: '',
-  bedrooms: '',
-  bathrooms: '',
-  maxOccupants: '',
-  rooms: '',
+  title: "",
+  address: "",
+  ward: "",
+  district: "",
+  city: "Da Nang",
+  price: "",
+  area: "",
+  bedrooms: "",
+  bathrooms: "",
+  maxOccupants: "",
+  rooms: "",
   furnished: true,
-  amenities: '',
-  description: '',
+  amenities: "",
+  description: "",
   images: [],
   available: true,
   gym: false,
@@ -65,21 +65,21 @@ const EMPTY_FORM = {
 
 const formatPrice = (price) => {
   return `${(Number(price) / 1_000_000).toFixed(
-    Number(price) % 1_000_000 === 0 ? 0 : 1
+    Number(price) % 1_000_000 === 0 ? 0 : 1,
   )}M`;
 };
 
 const formatVnd = (price) => {
-  return `${Number(price || 0).toLocaleString('vi-VN')} VND`;
+  return `${Number(price || 0).toLocaleString("vi-VN")} VND`;
 };
 
 const formatDate = (date) => {
-  if (!date) return '-';
+  if (!date) return "-";
 
-  return new Date(date).toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
+  return new Date(date).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
   });
 };
 
@@ -100,17 +100,17 @@ const normalizeImages = (images) => {
 
   return images
     .map((image) => {
-      if (typeof image === 'string') {
+      if (typeof image === "string") {
         return {
           url: image,
-          publicId: '',
+          publicId: "",
         };
       }
 
-      if (image && typeof image === 'object') {
+      if (image && typeof image === "object") {
         return {
-          url: image.url || '',
-          publicId: image.publicId || '',
+          url: image.url || "",
+          publicId: image.publicId || "",
         };
       }
 
@@ -123,22 +123,22 @@ const getInitialForm = (apartment = null) => {
   if (!apartment) return { ...EMPTY_FORM };
 
   return {
-    title: apartment.title || '',
-    address: apartment.address || '',
-    ward: apartment.ward || '',
-    district: apartment.district || '',
-    city: apartment.city || 'Da Nang',
-    price: apartment.price ?? '',
-    area: apartment.area ?? '',
-    bedrooms: apartment.bedrooms ?? '',
-    bathrooms: apartment.bathrooms ?? '',
-    maxOccupants: apartment.maxOccupants ?? '',
-    rooms: apartment.rooms ?? '',
+    title: apartment.title || "",
+    address: apartment.address || "",
+    ward: apartment.ward || "",
+    district: apartment.district || "",
+    city: apartment.city || "Da Nang",
+    price: apartment.price ?? "",
+    area: apartment.area ?? "",
+    bedrooms: apartment.bedrooms ?? "",
+    bathrooms: apartment.bathrooms ?? "",
+    maxOccupants: apartment.maxOccupants ?? "",
+    rooms: apartment.rooms ?? "",
     furnished: apartment.furnished ?? true,
     amenities: Array.isArray(apartment.amenities)
-      ? apartment.amenities.join(', ')
-      : '',
-    description: apartment.description || '',
+      ? apartment.amenities.join(", ")
+      : "",
+    description: apartment.description || "",
     images: normalizeImages(apartment.images),
     available: apartment.available ?? true,
     gym: apartment.gym ?? false,
@@ -150,23 +150,40 @@ const getInitialForm = (apartment = null) => {
 export default function AdminDashboard() {
   const [apartments, setApartments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 0,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
 
-  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
+  const [search, setSearch] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [stats, setStats] = useState({
+    total: 0,
+    available: 0,
+    hidden: 0,
+    petFriendly: 0,
+  });
 
+  const [districts, setDistricts] = useState([]);
   const [filters, setFilters] = useState({
-    status: 'all',
-    district: '',
-    bedrooms: 'all',
-    price: 'all',
-    area: 'all',
+    status: "all",
+    district: "",
+    bedrooms: "all",
+    price: "all",
+    area: "all",
     petFriendly: false,
     pool: false,
     gym: false,
     furnished: false,
   });
 
-  const [sortBy, setSortBy] = useState('newest');
+  const [sortBy, setSortBy] = useState("newest");
 
   const [showModal, setShowModal] = useState(false);
   const [editingApartment, setEditingApartment] = useState(null);
@@ -185,49 +202,92 @@ export default function AdminDashboard() {
 
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const showingStart =
+    pagination.total === 0 ? 0 : (pagination.page - 1) * pagination.limit + 1;
 
+  const showingEnd = Math.min(
+    pagination.page * pagination.limit,
+    pagination.total,
+  );
   // =========================
   // LOAD APARTMENTS
   // =========================
 
-  const loadApartments = async () => {
+  const loadApartments = async (targetPage = page, targetLimit = limit) => {
     try {
       setLoading(true);
 
-      const data = await getAdminApartments();
+      const data = await getAdminApartments({
+        page: targetPage,
+        limit: targetLimit,
 
-      const list = Array.isArray(data)
-        ? data
-        : Array.isArray(data?.apartments)
-        ? data.apartments
-        : [];
+        search: search.trim(),
+
+        status: filters.status,
+        district: filters.district,
+        bedrooms: filters.bedrooms,
+        price: filters.price,
+        area: filters.area,
+
+        petFriendly: filters.petFriendly,
+        pool: filters.pool,
+        gym: filters.gym,
+        furnished: filters.furnished,
+
+        sort: sortBy,
+      });
+
+      const list = Array.isArray(data?.apartments) ? data.apartments : [];
 
       setApartments(list);
+
+      setPagination(
+        data?.pagination || {
+          page: targetPage,
+          limit: targetLimit,
+          total: 0,
+          totalPages: 0,
+          hasNextPage: false,
+          hasPrevPage: false,
+        },
+      );
+
+      setStats(
+        data?.stats || {
+          total: 0,
+          available: 0,
+          hidden: 0,
+          petFriendly: 0,
+        },
+      );
+
+      setDistricts(Array.isArray(data?.districts) ? data.districts : []);
+
+      /*
+      Backend có thể trả về page nhỏ hơn targetPage
+      nếu page cũ không còn tồn tại sau khi xóa/filter.
+    */
+      if (data?.pagination?.page && data.pagination.page !== targetPage) {
+        setPage(data.pagination.page);
+      }
     } catch (error) {
-      console.error('LOAD ADMIN APARTMENTS ERROR:', error);
-      alert(error.message || 'Không thể tải danh sách căn hộ');
+      console.error("LOAD ADMIN APARTMENTS ERROR:", error);
+
+      alert(error.message || "Không thể tải danh sách căn hộ");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadApartments();
-  }, []);
+    const delay = search.trim() ? 350 : 0;
 
-  // =========================
-  // DISTRICTS
-  // =========================
+    const timer = setTimeout(() => {
+      loadApartments(page, limit);
+    }, delay);
 
-  const districts = useMemo(() => {
-    return [
-      ...new Set(
-        apartments
-          .map((item) => item.district)
-          .filter(Boolean)
-      ),
-    ].sort();
-  }, [apartments]);
+    return () => clearTimeout(timer);
+  }, [page, limit, search, filters, sortBy]);
 
   // =========================
   // FILTER COUNT
@@ -236,11 +296,11 @@ export default function AdminDashboard() {
   const activeFilterCount = useMemo(() => {
     let count = 0;
 
-    if (filters.status !== 'all') count++;
+    if (filters.status !== "all") count++;
     if (filters.district) count++;
-    if (filters.bedrooms !== 'all') count++;
-    if (filters.price !== 'all') count++;
-    if (filters.area !== 'all') count++;
+    if (filters.bedrooms !== "all") count++;
+    if (filters.price !== "all") count++;
+    if (filters.area !== "all") count++;
     if (filters.petFriendly) count++;
     if (filters.pool) count++;
     if (filters.gym) count++;
@@ -253,191 +313,7 @@ export default function AdminDashboard() {
   // FILTER + SORT
   // =========================
 
-  const filteredApartments = useMemo(() => {
-    let result = [...apartments];
-
-    const keyword = search.trim().toLowerCase();
-
-    if (keyword) {
-      result = result.filter((item) => {
-        const searchableText = [
-          item.title,
-          item.address,
-          item.ward,
-          item.district,
-          item.city,
-          item.description,
-        ]
-          .filter(Boolean)
-          .join(' ')
-          .toLowerCase();
-
-        return searchableText.includes(keyword);
-      });
-    }
-
-    if (filters.status === 'available') {
-      result = result.filter((item) => item.available === true);
-    }
-
-    if (filters.status === 'hidden') {
-      result = result.filter((item) => item.available === false);
-    }
-
-    if (filters.district) {
-      result = result.filter(
-        (item) => item.district === filters.district
-      );
-    }
-
-    if (filters.bedrooms !== 'all') {
-      if (filters.bedrooms === '3+') {
-        result = result.filter(
-          (item) => Number(item.bedrooms) >= 3
-        );
-      } else {
-        result = result.filter(
-          (item) =>
-            Number(item.bedrooms) ===
-            Number(filters.bedrooms)
-        );
-      }
-    }
-
-    if (filters.price !== 'all') {
-      result = result.filter((item) => {
-        const price = Number(item.price || 0);
-
-        switch (filters.price) {
-          case 'under10':
-            return price < 10_000_000;
-
-          case '10-15':
-            return (
-              price >= 10_000_000 &&
-              price <= 15_000_000
-            );
-
-          case '15-20':
-            return (
-              price > 15_000_000 &&
-              price <= 20_000_000
-            );
-
-          case '20-30':
-            return (
-              price > 20_000_000 &&
-              price <= 30_000_000
-            );
-
-          case 'over30':
-            return price > 30_000_000;
-
-          default:
-            return true;
-        }
-      });
-    }
-
-    if (filters.area !== 'all') {
-      result = result.filter((item) => {
-        const area = Number(item.area || 0);
-
-        switch (filters.area) {
-          case 'under40':
-            return area < 40;
-
-          case '40-60':
-            return area >= 40 && area <= 60;
-
-          case '60-80':
-            return area > 60 && area <= 80;
-
-          case 'over80':
-            return area > 80;
-
-          default:
-            return true;
-        }
-      });
-    }
-
-    if (filters.petFriendly) {
-      result = result.filter(
-        (item) => item.petFriendly === true
-      );
-    }
-
-    if (filters.pool) {
-      result = result.filter(
-        (item) => item.pool === true
-      );
-    }
-
-    if (filters.gym) {
-      result = result.filter(
-        (item) => item.gym === true
-      );
-    }
-
-    if (filters.furnished) {
-      result = result.filter(
-        (item) => item.furnished === true
-      );
-    }
-
-    result.sort((a, b) => {
-      switch (sortBy) {
-        case 'price-asc':
-          return Number(a.price || 0) - Number(b.price || 0);
-
-        case 'price-desc':
-          return Number(b.price || 0) - Number(a.price || 0);
-
-        case 'area-asc':
-          return Number(a.area || 0) - Number(b.area || 0);
-
-        case 'area-desc':
-          return Number(b.area || 0) - Number(a.area || 0);
-
-        case 'newest':
-        default:
-          return (
-            new Date(b.createdAt || 0) -
-            new Date(a.createdAt || 0)
-          );
-      }
-    });
-
-    return result;
-  }, [apartments, search, filters, sortBy]);
-
-  // =========================
-  // STATS
-  // =========================
-
-  const stats = useMemo(() => {
-    const total = apartments.length;
-
-    const available = apartments.filter(
-      (item) => item.available === true
-    ).length;
-
-    const hidden = apartments.filter(
-      (item) => item.available === false
-    ).length;
-
-    const petFriendly = apartments.filter(
-      (item) => item.petFriendly === true
-    ).length;
-
-    return {
-      total,
-      available,
-      hidden,
-      petFriendly,
-    };
-  }, [apartments]);
+  const filteredApartments = apartments;
 
   // =========================
   // FORM
@@ -482,57 +358,47 @@ export default function AdminDashboard() {
 
     if (!files.length) return;
 
-    const currentCount =
-      form.images.length + selectedFiles.length;
+    const currentCount = form.images.length + selectedFiles.length;
 
     if (currentCount + files.length > 15) {
-      alert('Mỗi căn hộ tối đa 15 ảnh.');
-      e.target.value = '';
+      alert("Mỗi căn hộ tối đa 15 ảnh.");
+      e.target.value = "";
       return;
     }
 
     const invalidFiles = files.filter(
-      (file) => !file.type.startsWith('image/')
+      (file) => !file.type.startsWith("image/"),
     );
 
     if (invalidFiles.length) {
-      alert('Chỉ được chọn file ảnh.');
-      e.target.value = '';
+      alert("Chỉ được chọn file ảnh.");
+      e.target.value = "";
       return;
     }
 
-    const tooLargeFiles = files.filter(
-      (file) => file.size > 10 * 1024 * 1024
-    );
+    const tooLargeFiles = files.filter((file) => file.size > 10 * 1024 * 1024);
 
     if (tooLargeFiles.length) {
-      alert(
-        'Mỗi ảnh tối đa 10MB. Vui lòng chọn ảnh nhỏ hơn.'
-      );
-      e.target.value = '';
+      alert("Mỗi ảnh tối đa 10MB. Vui lòng chọn ảnh nhỏ hơn.");
+      e.target.value = "";
       return;
     }
 
-    setSelectedFiles((prev) => [
-      ...prev,
-      ...files,
-    ]);
+    setSelectedFiles((prev) => [...prev, ...files]);
 
-    e.target.value = '';
+    e.target.value = "";
   };
 
   const removeNewImage = (index) => {
     setSelectedFiles((prev) =>
-      prev.filter((_, fileIndex) => fileIndex !== index)
+      prev.filter((_, fileIndex) => fileIndex !== index),
     );
   };
 
   const removeExistingImage = (index) => {
     setForm((prev) => ({
       ...prev,
-      images: prev.images.filter(
-        (_, imageIndex) => imageIndex !== index
-      ),
+      images: prev.images.filter((_, imageIndex) => imageIndex !== index),
     }));
   };
 
@@ -544,27 +410,27 @@ export default function AdminDashboard() {
     e.preventDefault();
 
     if (!form.title.trim()) {
-      alert('Vui lòng nhập tên căn hộ');
+      alert("Vui lòng nhập tên căn hộ");
       return;
     }
 
     if (!form.address.trim()) {
-      alert('Vui lòng nhập địa chỉ');
+      alert("Vui lòng nhập địa chỉ");
       return;
     }
 
     if (!form.ward.trim()) {
-      alert('Vui lòng nhập phường');
+      alert("Vui lòng nhập phường");
       return;
     }
 
     if (!form.district.trim()) {
-      alert('Vui lòng nhập quận');
+      alert("Vui lòng nhập quận");
       return;
     }
 
     if (!form.price) {
-      alert('Vui lòng nhập giá thuê');
+      alert("Vui lòng nhập giá thuê");
       return;
     }
 
@@ -594,16 +460,11 @@ export default function AdminDashboard() {
         setUploadingImages(true);
 
         try {
-          const response =
-            await uploadImages(selectedFiles);
+          const response = await uploadImages(selectedFiles);
 
-          uploadedImages =
-            response?.images || [];
+          uploadedImages = response?.images || [];
 
-          finalImages = [
-            ...finalImages,
-            ...uploadedImages,
-          ];
+          finalImages = [...finalImages, ...uploadedImages];
         } finally {
           setUploadingImages(false);
         }
@@ -620,7 +481,7 @@ export default function AdminDashboard() {
         address: form.address.trim(),
         ward: form.ward.trim(),
         district: form.district.trim(),
-        city: form.city.trim() || 'Da Nang',
+        city: form.city.trim() || "Da Nang",
 
         price: Number(form.price),
         area: Number(form.area),
@@ -632,7 +493,7 @@ export default function AdminDashboard() {
         furnished: Boolean(form.furnished),
 
         amenities: form.amenities
-          .split(',')
+          .split(",")
           .map((item) => item.trim())
           .filter(Boolean),
 
@@ -653,16 +514,10 @@ export default function AdminDashboard() {
       */
 
       if (!editingApartment) {
-        const response =
-          await createApartment(payload);
+        const response = await createApartment(payload);
 
-        const newApartment =
-          response?.apartment || response;
-
-        setApartments((prev) => [
-          newApartment,
-          ...prev,
-        ]);
+        setPage(1);
+        await loadApartments(1, limit);
       }
 
       /*
@@ -672,22 +527,13 @@ export default function AdminDashboard() {
       */
 
       if (editingApartment) {
-        const response =
-          await updateApartment(
-            editingApartment._id,
-            payload
-          );
+        const response = await updateApartment(editingApartment._id, payload);
 
-        const updatedApartment =
-          response?.apartment || response;
+        const updatedApartment = response?.apartment || response;
 
-        setApartments((prev) =>
-          prev.map((item) =>
-            item._id === editingApartment._id
-              ? updatedApartment
-              : item
-          )
-        );
+        await updateApartment(editingApartment._id, payload);
+
+        await loadApartments(page, limit);
 
         /*
           Sau khi MongoDB update thành công,
@@ -698,25 +544,18 @@ export default function AdminDashboard() {
         */
 
         const currentPublicIds = new Set(
-          finalImages
-            .map((image) => image.publicId)
-            .filter(Boolean)
+          finalImages.map((image) => image.publicId).filter(Boolean),
         );
 
         const removedImages = oldImages.filter(
-          (image) =>
-            image.publicId &&
-            !currentPublicIds.has(image.publicId)
+          (image) => image.publicId && !currentPublicIds.has(image.publicId),
         );
 
         for (const image of removedImages) {
           try {
             await deleteImage(image.publicId);
           } catch (error) {
-            console.error(
-              'DELETE OLD CLOUDINARY IMAGE ERROR:',
-              error
-            );
+            console.error("DELETE OLD CLOUDINARY IMAGE ERROR:", error);
           }
         }
       }
@@ -726,7 +565,7 @@ export default function AdminDashboard() {
       setForm({ ...EMPTY_FORM });
       setSelectedFiles([]);
     } catch (error) {
-      console.error('SAVE APARTMENT ERROR:', error);
+      console.error("SAVE APARTMENT ERROR:", error);
 
       /*
         Nếu đã upload ảnh mới nhưng MongoDB
@@ -740,19 +579,13 @@ export default function AdminDashboard() {
             try {
               await deleteImage(image.publicId);
             } catch (cleanupError) {
-              console.error(
-                'CLEANUP CLOUDINARY IMAGE ERROR:',
-                cleanupError
-              );
+              console.error("CLEANUP CLOUDINARY IMAGE ERROR:", cleanupError);
             }
           }
         }
       }
 
-      alert(
-        error.message ||
-          'Không thể lưu căn hộ'
-      );
+      alert(error.message || "Không thể lưu căn hộ");
     } finally {
       setSaving(false);
       setUploadingImages(false);
@@ -769,13 +602,9 @@ export default function AdminDashboard() {
 
       const newAvailable = !apartment.available;
 
-      const response = await updateAvailability(
-        apartment._id,
-        newAvailable
-      );
-
-      const updatedApartment =
-        response?.apartment || response;
+      const response = await updateAvailability(apartment._id, newAvailable);
+      await loadApartments(page, limit);
+      const updatedApartment = response?.apartment || response;
 
       setApartments((prev) =>
         prev.map((item) =>
@@ -785,19 +614,13 @@ export default function AdminDashboard() {
                 ...updatedApartment,
                 available: newAvailable,
               }
-            : item
-        )
+            : item,
+        ),
       );
     } catch (error) {
-      console.error(
-        'UPDATE AVAILABILITY ERROR:',
-        error
-      );
+      console.error("UPDATE AVAILABILITY ERROR:", error);
 
-      alert(
-        error.message ||
-          'Không thể thay đổi trạng thái căn hộ'
-      );
+      alert(error.message || "Không thể thay đổi trạng thái căn hộ");
     } finally {
       setActionId(null);
     }
@@ -822,8 +645,7 @@ export default function AdminDashboard() {
         Ảnh cũ chỉ lưu URL sẽ được bỏ qua.
       */
 
-      const imagesToDelete =
-        normalizeImages(deleteTarget.images);
+      const imagesToDelete = normalizeImages(deleteTarget.images);
 
       for (const image of imagesToDelete) {
         if (!image.publicId) continue;
@@ -831,30 +653,17 @@ export default function AdminDashboard() {
         try {
           await deleteImage(image.publicId);
         } catch (error) {
-          console.error(
-            'DELETE APARTMENT IMAGE ERROR:',
-            error
-          );
+          console.error("DELETE APARTMENT IMAGE ERROR:", error);
         }
       }
 
-      setApartments((prev) =>
-        prev.filter(
-          (item) => item._id !== deleteTarget._id
-        )
-      );
-
       setDeleteTarget(null);
-    } catch (error) {
-      console.error(
-        'DELETE APARTMENT ERROR:',
-        error
-      );
 
-      alert(
-        error.message ||
-          'Không thể xóa căn hộ'
-      );
+      await loadApartments(page, limit);
+    } catch (error) {
+      console.error("DELETE APARTMENT ERROR:", error);
+
+      alert(error.message || "Không thể xóa căn hộ");
     } finally {
       setDeleting(false);
     }
@@ -863,22 +672,31 @@ export default function AdminDashboard() {
   // =========================
   // RESET FILTER
   // =========================
+  const updateFilter = (field, value) => {
+    setFilters((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
 
+    setPage(1);
+  };
   const resetFilters = () => {
     setFilters({
-      status: 'all',
-      district: '',
-      bedrooms: 'all',
-      price: 'all',
-      area: 'all',
+      status: "all",
+      district: "",
+      bedrooms: "all",
+      price: "all",
+      area: "all",
       petFriendly: false,
       pool: false,
       gym: false,
       furnished: false,
     });
 
-    setSearch('');
-    setSortBy('newest');
+    setSearch("");
+    setSortBy("newest");
+
+    setPage(1);
   };
 
   // =========================
@@ -886,8 +704,8 @@ export default function AdminDashboard() {
   // =========================
 
   const handleLogout = () => {
-    localStorage.removeItem('adminToken');
-    window.location.href = '/admin/login';
+    localStorage.removeItem("adminToken");
+    window.location.href = "/admin/login";
   };
 
   // =========================
@@ -898,26 +716,20 @@ export default function AdminDashboard() {
     return (
       <div className="flex min-h-[500px] items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <RefreshCw
-            size={30}
-            className="animate-spin text-slate-400"
-          />
+          <RefreshCw size={30} className="animate-spin text-slate-400" />
 
-          <p className="text-sm text-slate-500">
-            Loading apartments...
-          </p>
+          <p className="text-sm text-slate-500">Loading apartments...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-5 sm:px-6 lg:px-8">
+    <div className="min-h-screen px-4 py-5 bg-slate-50 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1500px]">
-
         {/* TOP ACTIONS */}
 
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">
               Apartment Management
@@ -936,9 +748,7 @@ export default function AdminDashboard() {
             >
               <RefreshCw size={16} />
 
-              <span className="hidden sm:inline">
-                Refresh
-              </span>
+              <span className="hidden sm:inline">Refresh</span>
             </button>
 
             <button
@@ -958,16 +768,14 @@ export default function AdminDashboard() {
             >
               <LogOut size={17} />
 
-              <span className="hidden lg:inline">
-                Logout
-              </span>
+              <span className="hidden lg:inline">Logout</span>
             </button>
           </div>
         </div>
 
         {/* STATS */}
 
-        <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 mb-6 lg:grid-cols-4">
           <StatCard
             label="Total"
             value={stats.total}
@@ -1002,13 +810,11 @@ export default function AdminDashboard() {
 
         {/* MAIN CONTENT */}
 
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-
+        <div className="overflow-hidden bg-white border shadow-sm rounded-2xl border-slate-200">
           {/* SEARCH + SORT */}
 
-          <div className="border-b border-slate-100 p-4">
+          <div className="p-4 border-b border-slate-100">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-
               <div className="relative flex-1">
                 <Search
                   size={18}
@@ -1018,37 +824,33 @@ export default function AdminDashboard() {
                 <input
                   type="text"
                   value={search}
-                  onChange={(e) =>
-                    setSearch(e.target.value)
-                  }
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setPage(1);
+                  }}
                   placeholder="Search apartments..."
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-300 focus:bg-white"
                 />
               </div>
 
               <div className="flex gap-2">
-
                 <button
                   type="button"
-                  onClick={() =>
-                    setShowFilters((prev) => !prev)
-                  }
+                  onClick={() => setShowFilters((prev) => !prev)}
                   className={`inline-flex flex-1 items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition sm:flex-none ${
                     showFilters || activeFilterCount > 0
-                      ? 'border-slate-900 bg-slate-900 text-white'
-                      : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+                      ? "border-slate-900 bg-slate-900 text-white"
+                      : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
                   }`}
                 >
                   <SlidersHorizontal size={16} />
-
                   Filters
-
                   {activeFilterCount > 0 && (
                     <span
                       className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] ${
                         showFilters
-                          ? 'bg-white text-slate-900'
-                          : 'bg-slate-900 text-white'
+                          ? "bg-white text-slate-900"
+                          : "bg-slate-900 text-white"
                       }`}
                     >
                       {activeFilterCount}
@@ -1059,144 +861,101 @@ export default function AdminDashboard() {
                 <div className="relative flex-1 sm:flex-none">
                   <ArrowUpDown
                     size={15}
-                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                    className="absolute -translate-y-1/2 pointer-events-none left-3 top-1/2 text-slate-400"
                   />
 
                   <select
                     value={sortBy}
-                    onChange={(e) =>
-                      setSortBy(e.target.value)
-                    }
+                    onChange={(e) => {
+                      setSortBy(e.target.value);
+                      setPage(1);
+                    }}
                     className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-8 text-sm font-medium text-slate-700 outline-none transition hover:border-slate-300 focus:border-slate-400 sm:w-[190px]"
                   >
-                    <option value="newest">
-                      Newest
-                    </option>
+                    <option value="newest">Newest</option>
 
-                    <option value="price-asc">
-                      Price: Low → High
-                    </option>
+                    <option value="price-asc">Price: Low → High</option>
 
-                    <option value="price-desc">
-                      Price: High → Low
-                    </option>
+                    <option value="price-desc">Price: High → Low</option>
 
-                    <option value="area-asc">
-                      Area: Small → Large
-                    </option>
+                    <option value="area-asc">Area: Small → Large</option>
 
-                    <option value="area-desc">
-                      Area: Large → Small
-                    </option>
+                    <option value="area-desc">Area: Large → Small</option>
                   </select>
                 </div>
               </div>
             </div>
 
             {showFilters && (
-              <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
-
+              <div className="p-4 mt-4 border rounded-xl border-slate-200 bg-slate-50">
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-
                   <FilterSelect
                     label="Status"
                     value={filters.status}
-                    onChange={(value) =>
-                      setFilters((prev) => ({
-                        ...prev,
-                        status: value,
-                      }))
-                    }
+                    onChange={(value) => updateFilter("status", value)}
                     options={[
-                      ['all', 'All status'],
-                      ['available', 'Available'],
-                      ['hidden', 'Hidden'],
+                      ["all", "All status"],
+                      ["available", "Available"],
+                      ["hidden", "Hidden"],
                     ]}
                   />
 
                   <FilterSelect
                     label="District"
                     value={filters.district}
-                    onChange={(value) =>
-                      setFilters((prev) => ({
-                        ...prev,
-                        district: value,
-                      }))
-                    }
+                    onChange={(value) => updateFilter("district", value)}
                     options={[
-                      ['', 'All districts'],
-                      ...districts.map((district) => [
-                        district,
-                        district,
-                      ]),
+                      ["", "All districts"],
+                      ...districts.map((district) => [district, district]),
                     ]}
                   />
 
                   <FilterSelect
                     label="Bedrooms"
                     value={filters.bedrooms}
-                    onChange={(value) =>
-                      setFilters((prev) => ({
-                        ...prev,
-                        bedrooms: value,
-                      }))
-                    }
+                    onChange={(value) => updateFilter("bedrooms", value)}
                     options={[
-                      ['all', 'All bedrooms'],
-                      ['0', 'Studio'],
-                      ['1', '1 Bedroom'],
-                      ['2', '2 Bedrooms'],
-                      ['3+', '3+ Bedrooms'],
+                      ["all", "All bedrooms"],
+                      ["0", "Studio"],
+                      ["1", "1 Bedroom"],
+                      ["2", "2 Bedrooms"],
+                      ["3+", "3+ Bedrooms"],
                     ]}
                   />
 
                   <FilterSelect
                     label="Price"
                     value={filters.price}
-                    onChange={(value) =>
-                      setFilters((prev) => ({
-                        ...prev,
-                        price: value,
-                      }))
-                    }
+                    onChange={(value) => updateFilter("price", value)}
                     options={[
-                      ['all', 'All prices'],
-                      ['under10', 'Under 10M'],
-                      ['10-15', '10M – 15M'],
-                      ['15-20', '15M – 20M'],
-                      ['20-30', '20M – 30M'],
-                      ['over30', 'Over 30M'],
+                      ["all", "All prices"],
+                      ["under10", "Under 10M"],
+                      ["10-15", "10M – 15M"],
+                      ["15-20", "15M – 20M"],
+                      ["20-30", "20M – 30M"],
+                      ["over30", "Over 30M"],
                     ]}
                   />
 
                   <FilterSelect
                     label="Area"
                     value={filters.area}
-                    onChange={(value) =>
-                      setFilters((prev) => ({
-                        ...prev,
-                        area: value,
-                      }))
-                    }
+                    onChange={(value) => updateFilter("area", value)}
                     options={[
-                      ['all', 'All areas'],
-                      ['under40', 'Under 40m²'],
-                      ['40-60', '40 – 60m²'],
-                      ['60-80', '60 – 80m²'],
-                      ['over80', 'Over 80m²'],
+                      ["all", "All areas"],
+                      ["under40", "Under 40m²"],
+                      ["40-60", "40 – 60m²"],
+                      ["60-80", "60 – 80m²"],
+                      ["over80", "Over 80m²"],
                     ]}
                   />
                 </div>
 
-                <div className="mt-4 flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2 mt-4">
                   <FacilityFilter
                     active={filters.petFriendly}
                     onClick={() =>
-                      setFilters((prev) => ({
-                        ...prev,
-                        petFriendly:
-                          !prev.petFriendly,
-                      }))
+                      updateFilter("petFriendly", !filters.petFriendly)
                     }
                     icon={<PawPrint size={14} />}
                   >
@@ -1205,12 +964,7 @@ export default function AdminDashboard() {
 
                   <FacilityFilter
                     active={filters.pool}
-                    onClick={() =>
-                      setFilters((prev) => ({
-                        ...prev,
-                        pool: !prev.pool,
-                      }))
-                    }
+                    onClick={() => updateFilter("pool", !filters.pool)}
                     icon={<Waves size={14} />}
                   >
                     Pool
@@ -1218,12 +972,7 @@ export default function AdminDashboard() {
 
                   <FacilityFilter
                     active={filters.gym}
-                    onClick={() =>
-                      setFilters((prev) => ({
-                        ...prev,
-                        gym: !prev.gym,
-                      }))
-                    }
+                    onClick={() => updateFilter("gym", !filters.gym)}
                     icon={<Dumbbell size={14} />}
                   >
                     Gym
@@ -1232,10 +981,7 @@ export default function AdminDashboard() {
                   <FacilityFilter
                     active={filters.furnished}
                     onClick={() =>
-                      setFilters((prev) => ({
-                        ...prev,
-                        furnished: !prev.furnished,
-                      }))
+                      updateFilter("furnished", !filters.furnished)
                     }
                     icon={<Sofa size={14} />}
                   >
@@ -1259,13 +1005,17 @@ export default function AdminDashboard() {
 
           {/* RESULT COUNT */}
 
-          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
             <p className="text-sm text-slate-500">
-              Showing{' '}
+              Showing{" "}
               <span className="font-semibold text-slate-900">
-                {filteredApartments.length}
-              </span>{' '}
-              / {apartments.length} apartments
+                {showingStart}-{showingEnd}
+              </span>{" "}
+              of{" "}
+              <span className="font-semibold text-slate-900">
+                {pagination.total}
+              </span>{" "}
+              apartments
             </p>
 
             {(search || activeFilterCount > 0) && (
@@ -1302,24 +1052,21 @@ export default function AdminDashboard() {
                   <EmptyTable />
                 ) : (
                   filteredApartments.map((apartment) => {
-                    const images =
-                      normalizeImages(
-                        apartment.images
-                      );
+                    const images = normalizeImages(apartment.images);
 
                     return (
                       <tr
                         key={apartment._id}
-                        className="border-b border-slate-100 transition hover:bg-slate-50/60"
+                        className="transition border-b border-slate-100 hover:bg-slate-50/60"
                       >
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-3">
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-100">
+                            <div className="flex items-center justify-center w-12 h-12 overflow-hidden shrink-0 rounded-xl bg-slate-100">
                               {images[0]?.url ? (
                                 <img
                                   src={images[0].url}
                                   alt={apartment.title}
-                                  className="h-full w-full object-cover"
+                                  className="object-cover w-full h-full"
                                 />
                               ) : (
                                 <Building2
@@ -1335,10 +1082,7 @@ export default function AdminDashboard() {
                               </p>
 
                               <p className="mt-0.5 text-xs text-slate-400">
-                                Added{' '}
-                                {formatDate(
-                                  apartment.createdAt
-                                )}
+                                Added {formatDate(apartment.createdAt)}
                               </p>
                             </div>
                           </div>
@@ -1365,29 +1109,21 @@ export default function AdminDashboard() {
 
                         <td className="px-4 py-4">
                           <div className="flex flex-wrap gap-2 text-xs text-slate-500">
-                            <DetailBadge
-                              icon={<BedDouble size={13} />}
-                            >
+                            <DetailBadge icon={<BedDouble size={13} />}>
                               {apartment.bedrooms} BR
                             </DetailBadge>
 
-                            <DetailBadge
-                              icon={<Bath size={13} />}
-                            >
+                            <DetailBadge icon={<Bath size={13} />}>
                               {apartment.bathrooms}
                             </DetailBadge>
 
-                            <DetailBadge
-                              icon={<Ruler size={13} />}
-                            >
+                            <DetailBadge icon={<Ruler size={13} />}>
                               {apartment.area}m²
                             </DetailBadge>
 
                             {apartment.petFriendly && (
                               <FeatureBadge
-                                icon={
-                                  <PawPrint size={13} />
-                                }
+                                icon={<PawPrint size={13} />}
                                 className="bg-amber-50 text-amber-700"
                               >
                                 Pet
@@ -1396,9 +1132,7 @@ export default function AdminDashboard() {
 
                             {apartment.pool && (
                               <FeatureBadge
-                                icon={
-                                  <Waves size={13} />
-                                }
+                                icon={<Waves size={13} />}
                                 className="bg-cyan-50 text-cyan-700"
                               >
                                 Pool
@@ -1407,9 +1141,7 @@ export default function AdminDashboard() {
 
                             {apartment.gym && (
                               <FeatureBadge
-                                icon={
-                                  <Dumbbell size={13} />
-                                }
+                                icon={<Dumbbell size={13} />}
                                 className="bg-violet-50 text-violet-700"
                               >
                                 Gym
@@ -1420,34 +1152,23 @@ export default function AdminDashboard() {
 
                         <td className="px-4 py-4">
                           <p className="font-bold text-slate-900">
-                            {formatPrice(
-                              apartment.price
-                            )}
+                            {formatPrice(apartment.price)}
                           </p>
 
                           <p className="mt-0.5 text-xs text-slate-400">
-                            {formatVnd(
-                              apartment.price
-                            )}
+                            {formatVnd(apartment.price)}
                           </p>
                         </td>
 
                         <td className="px-4 py-4">
                           <button
                             type="button"
-                            disabled={
-                              actionId ===
-                              apartment._id
-                            }
-                            onClick={() =>
-                              handleAvailability(
-                                apartment
-                              )
-                            }
+                            disabled={actionId === apartment._id}
+                            onClick={() => handleAvailability(apartment)}
                             className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-semibold transition ${
                               apartment.available
-                                ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                                : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                                ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                                : "bg-slate-100 text-slate-500 hover:bg-slate-200"
                             }`}
                           >
                             {apartment.available ? (
@@ -1468,12 +1189,8 @@ export default function AdminDashboard() {
                           <div className="flex justify-end gap-1.5">
                             <button
                               type="button"
-                              onClick={() =>
-                                openEditModal(
-                                  apartment
-                                )
-                              }
-                              className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+                              onClick={() => openEditModal(apartment)}
+                              className="p-2 transition rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900"
                               title="Edit"
                             >
                               <Pencil size={16} />
@@ -1481,12 +1198,8 @@ export default function AdminDashboard() {
 
                             <button
                               type="button"
-                              onClick={() =>
-                                setDeleteTarget(
-                                  apartment
-                                )
-                              }
-                              className="rounded-lg p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+                              onClick={() => setDeleteTarget(apartment)}
+                              className="p-2 transition rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
                               title="Delete"
                             >
                               <Trash2 size={16} />
@@ -1511,10 +1224,7 @@ export default function AdminDashboard() {
           <div className="divide-y divide-slate-100 lg:hidden">
             {filteredApartments.length === 0 ? (
               <div className="px-5 py-16 text-center">
-                <Building2
-                  size={35}
-                  className="mx-auto mb-3 text-slate-300"
-                />
+                <Building2 size={35} className="mx-auto mb-3 text-slate-300" />
 
                 <p className="font-semibold text-slate-700">
                   No apartments found
@@ -1526,38 +1236,29 @@ export default function AdminDashboard() {
               </div>
             ) : (
               filteredApartments.map((apartment) => {
-                const images =
-                  normalizeImages(
-                    apartment.images
-                  );
+                const images = normalizeImages(apartment.images);
 
                 return (
-                  <div
-                    key={apartment._id}
-                    className="p-4"
-                  >
+                  <div key={apartment._id} className="p-4">
                     <div className="flex gap-3">
-                      <div className="h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-slate-100">
+                      <div className="w-24 h-24 overflow-hidden shrink-0 rounded-xl bg-slate-100">
                         {images[0]?.url ? (
                           <img
                             src={images[0].url}
                             alt={apartment.title}
-                            className="h-full w-full object-cover"
+                            className="object-cover w-full h-full"
                           />
                         ) : (
-                          <div className="flex h-full w-full items-center justify-center">
-                            <Building2
-                              size={22}
-                              className="text-slate-300"
-                            />
+                          <div className="flex items-center justify-center w-full h-full">
+                            <Building2 size={22} className="text-slate-300" />
                           </div>
                         )}
                       </div>
 
-                      <div className="min-w-0 flex-1">
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <h3 className="truncate font-bold text-slate-900">
+                            <h3 className="font-bold truncate text-slate-900">
                               {apartment.title}
                             </h3>
 
@@ -1569,27 +1270,19 @@ export default function AdminDashboard() {
 
                           <button
                             type="button"
-                            onClick={() =>
-                              handleAvailability(
-                                apartment
-                              )
-                            }
+                            onClick={() => handleAvailability(apartment)}
                             className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-bold ${
                               apartment.available
-                                ? 'bg-emerald-50 text-emerald-700'
-                                : 'bg-slate-100 text-slate-500'
+                                ? "bg-emerald-50 text-emerald-700"
+                                : "bg-slate-100 text-slate-500"
                             }`}
                           >
-                            {apartment.available
-                              ? 'AVAILABLE'
-                              : 'HIDDEN'}
+                            {apartment.available ? "AVAILABLE" : "HIDDEN"}
                           </button>
                         </div>
 
                         <p className="mt-2 text-lg font-bold text-slate-900">
-                          {formatPrice(
-                            apartment.price
-                          )}
+                          {formatPrice(apartment.price)}
 
                           <span className="ml-1 text-xs font-normal text-slate-400">
                             /month
@@ -1598,36 +1291,26 @@ export default function AdminDashboard() {
                       </div>
                     </div>
 
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <DetailBadge
-                        icon={<BedDouble size={13} />}
-                      >
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      <DetailBadge icon={<BedDouble size={13} />}>
                         {apartment.bedrooms} BR
                       </DetailBadge>
 
-                      <DetailBadge
-                        icon={<Bath size={13} />}
-                      >
+                      <DetailBadge icon={<Bath size={13} />}>
                         {apartment.bathrooms} Bath
                       </DetailBadge>
 
-                      <DetailBadge
-                        icon={<Ruler size={13} />}
-                      >
+                      <DetailBadge icon={<Ruler size={13} />}>
                         {apartment.area}m²
                       </DetailBadge>
 
-                      <DetailBadge
-                        icon={<Users size={13} />}
-                      >
+                      <DetailBadge icon={<Users size={13} />}>
                         {apartment.maxOccupants}
                       </DetailBadge>
 
                       {apartment.petFriendly && (
                         <FeatureBadge
-                          icon={
-                            <PawPrint size={13} />
-                          }
+                          icon={<PawPrint size={13} />}
                           className="bg-amber-50 text-amber-700"
                         >
                           Pet
@@ -1645,9 +1328,7 @@ export default function AdminDashboard() {
 
                       {apartment.gym && (
                         <FeatureBadge
-                          icon={
-                            <Dumbbell size={13} />
-                          }
+                          icon={<Dumbbell size={13} />}
                           className="bg-violet-50 text-violet-700"
                         >
                           Gym
@@ -1655,12 +1336,10 @@ export default function AdminDashboard() {
                       )}
                     </div>
 
-                    <div className="mt-3 flex gap-2">
+                    <div className="flex gap-2 mt-3">
                       <button
                         type="button"
-                        onClick={() =>
-                          openEditModal(apartment)
-                        }
+                        onClick={() => openEditModal(apartment)}
                         className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                       >
                         <Pencil size={15} />
@@ -1669,11 +1348,7 @@ export default function AdminDashboard() {
 
                       <button
                         type="button"
-                        onClick={() =>
-                          setDeleteTarget(
-                            apartment
-                          )
-                        }
+                        onClick={() => setDeleteTarget(apartment)}
                         className="rounded-xl border border-red-100 bg-red-50 px-4 py-2.5 text-red-600 transition hover:bg-red-100"
                       >
                         <Trash2 size={15} />
@@ -1690,32 +1365,127 @@ export default function AdminDashboard() {
       {/* =========================
           CREATE / EDIT MODAL
       ========================= */}
+      {/* PAGINATION */}
 
+      {pagination.total > 0 && (
+        <div className="flex flex-col gap-3 px-4 py-4 border-t border-slate-100 sm:flex-row sm:items-center sm:justify-between">
+          {/* LEFT */}
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-slate-500">Per page</span>
+
+            <select
+              value={limit}
+              onChange={(e) => {
+                const newLimit = Number(e.target.value);
+
+                setLimit(newLimit);
+                setPage(1);
+              }}
+              className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 outline-none focus:border-slate-400"
+            >
+              <option value={10}>10</option>
+
+              <option value={20}>20</option>
+
+              <option value={50}>50</option>
+            </select>
+          </div>
+
+          {/* RIGHT */}
+
+          {pagination.totalPages > 1 && (
+            <div className="flex items-center justify-center gap-1">
+              {/* PREVIOUS */}
+
+              <button
+                type="button"
+                disabled={!pagination.hasPrevPage}
+                onClick={() => setPage(pagination.page - 1)}
+                className="flex items-center justify-center px-2 text-sm font-semibold transition bg-white border rounded-lg h-9 min-w-9 border-slate-200 text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                ←
+              </button>
+
+              {/* PAGE NUMBERS */}
+
+              {Array.from(
+                {
+                  length: pagination.totalPages,
+                },
+                (_, index) => index + 1,
+              )
+                .filter((pageNumber) => {
+                  const current = pagination.page;
+
+                  return (
+                    pageNumber === 1 ||
+                    pageNumber === pagination.totalPages ||
+                    Math.abs(pageNumber - current) <= 1
+                  );
+                })
+                .map((pageNumber, index, visiblePages) => {
+                  const previous = visiblePages[index - 1];
+
+                  const showDots = previous && pageNumber - previous > 1;
+
+                  return (
+                    <div key={pageNumber} className="flex items-center gap-1">
+                      {showDots && (
+                        <span className="px-1 text-slate-400">...</span>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => setPage(pageNumber)}
+                        className={`flex h-9 min-w-9 items-center justify-center rounded-lg px-2 text-sm font-semibold transition ${
+                          pagination.page === pageNumber
+                            ? "bg-slate-900 text-white"
+                            : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                        }`}
+                      >
+                        {pageNumber}
+                      </button>
+                    </div>
+                  );
+                })}
+
+              {/* NEXT */}
+
+              <button
+                type="button"
+                disabled={!pagination.hasNextPage}
+                onClick={() => setPage(pagination.page + 1)}
+                className="flex items-center justify-center px-2 text-sm font-semibold transition bg-white border rounded-lg h-9 min-w-9 border-slate-200 text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                →
+              </button>
+            </div>
+          )}
+        </div>
+      )}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
           <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
-
             {/* HEADER */}
 
-            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
               <div>
                 <h2 className="text-lg font-bold text-slate-900">
-                  {editingApartment
-                    ? 'Edit apartment'
-                    : 'Add apartment'}
+                  {editingApartment ? "Edit apartment" : "Add apartment"}
                 </h2>
 
                 <p className="mt-0.5 text-xs text-slate-400">
                   {editingApartment
-                    ? 'Update apartment information'
-                    : 'Create a new apartment listing'}
+                    ? "Update apartment information"
+                    : "Create a new apartment listing"}
                 </p>
               </div>
 
               <button
                 type="button"
                 onClick={closeModal}
-                className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                className="p-2 transition rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"
               >
                 <X size={19} />
               </button>
@@ -1723,12 +1493,8 @@ export default function AdminDashboard() {
 
             {/* FORM */}
 
-            <form
-              onSubmit={handleSubmit}
-              className="overflow-y-auto"
-            >
+            <form onSubmit={handleSubmit} className="overflow-y-auto">
               <div className="grid gap-5 p-5 md:grid-cols-2">
-
                 {/* BASIC INFO */}
 
                 <div className="md:col-span-2">
@@ -1741,24 +1507,14 @@ export default function AdminDashboard() {
                       label="Title"
                       required
                       value={form.title}
-                      onChange={(value) =>
-                        handleChange(
-                          'title',
-                          value
-                        )
-                      }
+                      onChange={(value) => handleChange("title", value)}
                       placeholder="Modern 1 Bedroom Apartment"
                     />
 
                     <FormField
                       label="City"
                       value={form.city}
-                      onChange={(value) =>
-                        handleChange(
-                          'city',
-                          value
-                        )
-                      }
+                      onChange={(value) => handleChange("city", value)}
                       placeholder="Da Nang"
                     />
 
@@ -1766,12 +1522,7 @@ export default function AdminDashboard() {
                       label="Address"
                       required
                       value={form.address}
-                      onChange={(value) =>
-                        handleChange(
-                          'address',
-                          value
-                        )
-                      }
+                      onChange={(value) => handleChange("address", value)}
                       placeholder="123 Example Street"
                     />
 
@@ -1779,12 +1530,7 @@ export default function AdminDashboard() {
                       label="Ward"
                       required
                       value={form.ward}
-                      onChange={(value) =>
-                        handleChange(
-                          'ward',
-                          value
-                        )
-                      }
+                      onChange={(value) => handleChange("ward", value)}
                       placeholder="My An"
                     />
 
@@ -1792,12 +1538,7 @@ export default function AdminDashboard() {
                       label="District"
                       required
                       value={form.district}
-                      onChange={(value) =>
-                        handleChange(
-                          'district',
-                          value
-                        )
-                      }
+                      onChange={(value) => handleChange("district", value)}
                       placeholder="Ngu Hanh Son"
                     />
                   </div>
@@ -1816,12 +1557,7 @@ export default function AdminDashboard() {
                       required
                       type="number"
                       value={form.price}
-                      onChange={(value) =>
-                        handleChange(
-                          'price',
-                          value
-                        )
-                      }
+                      onChange={(value) => handleChange("price", value)}
                       placeholder="12000000"
                     />
 
@@ -1829,12 +1565,7 @@ export default function AdminDashboard() {
                       label="Area (m²)"
                       type="number"
                       value={form.area}
-                      onChange={(value) =>
-                        handleChange(
-                          'area',
-                          value
-                        )
-                      }
+                      onChange={(value) => handleChange("area", value)}
                       placeholder="50"
                     />
 
@@ -1842,12 +1573,7 @@ export default function AdminDashboard() {
                       label="Bedrooms"
                       type="number"
                       value={form.bedrooms}
-                      onChange={(value) =>
-                        handleChange(
-                          'bedrooms',
-                          value
-                        )
-                      }
+                      onChange={(value) => handleChange("bedrooms", value)}
                       placeholder="1"
                     />
 
@@ -1855,12 +1581,7 @@ export default function AdminDashboard() {
                       label="Bathrooms"
                       type="number"
                       value={form.bathrooms}
-                      onChange={(value) =>
-                        handleChange(
-                          'bathrooms',
-                          value
-                        )
-                      }
+                      onChange={(value) => handleChange("bathrooms", value)}
                       placeholder="1"
                     />
 
@@ -1868,12 +1589,7 @@ export default function AdminDashboard() {
                       label="Max occupants"
                       type="number"
                       value={form.maxOccupants}
-                      onChange={(value) =>
-                        handleChange(
-                          'maxOccupants',
-                          value
-                        )
-                      }
+                      onChange={(value) => handleChange("maxOccupants", value)}
                       placeholder="2"
                     />
 
@@ -1881,12 +1597,7 @@ export default function AdminDashboard() {
                       label="Rooms"
                       type="number"
                       value={form.rooms}
-                      onChange={(value) =>
-                        handleChange(
-                          'rooms',
-                          value
-                        )
-                      }
+                      onChange={(value) => handleChange("rooms", value)}
                       placeholder="1"
                     />
                   </div>
@@ -1902,12 +1613,7 @@ export default function AdminDashboard() {
                   <div className="flex flex-wrap gap-2">
                     <ToggleButton
                       active={form.furnished}
-                      onClick={() =>
-                        handleChange(
-                          'furnished',
-                          !form.furnished
-                        )
-                      }
+                      onClick={() => handleChange("furnished", !form.furnished)}
                     >
                       <Sofa size={15} />
                       Furnished
@@ -1916,10 +1622,7 @@ export default function AdminDashboard() {
                     <ToggleButton
                       active={form.petFriendly}
                       onClick={() =>
-                        handleChange(
-                          'petFriendly',
-                          !form.petFriendly
-                        )
+                        handleChange("petFriendly", !form.petFriendly)
                       }
                     >
                       <PawPrint size={15} />
@@ -1928,12 +1631,7 @@ export default function AdminDashboard() {
 
                     <ToggleButton
                       active={form.pool}
-                      onClick={() =>
-                        handleChange(
-                          'pool',
-                          !form.pool
-                        )
-                      }
+                      onClick={() => handleChange("pool", !form.pool)}
                     >
                       <Waves size={15} />
                       Pool
@@ -1941,12 +1639,7 @@ export default function AdminDashboard() {
 
                     <ToggleButton
                       active={form.gym}
-                      onClick={() =>
-                        handleChange(
-                          'gym',
-                          !form.gym
-                        )
-                      }
+                      onClick={() => handleChange("gym", !form.gym)}
                     >
                       <Dumbbell size={15} />
                       Gym
@@ -1954,12 +1647,7 @@ export default function AdminDashboard() {
 
                     <ToggleButton
                       active={form.available}
-                      onClick={() =>
-                        handleChange(
-                          'available',
-                          !form.available
-                        )
-                      }
+                      onClick={() => handleChange("available", !form.available)}
                     >
                       {form.available ? (
                         <Eye size={15} />
@@ -1967,9 +1655,7 @@ export default function AdminDashboard() {
                         <EyeOff size={15} />
                       )}
 
-                      {form.available
-                        ? 'Available'
-                        : 'Hidden'}
+                      {form.available ? "Available" : "Hidden"}
                     </ToggleButton>
                   </div>
                 </div>
@@ -1980,12 +1666,7 @@ export default function AdminDashboard() {
                   <FormTextarea
                     label="Amenities"
                     value={form.amenities}
-                    onChange={(value) =>
-                      handleChange(
-                        'amenities',
-                        value
-                      )
-                    }
+                    onChange={(value) => handleChange("amenities", value)}
                     placeholder="Balcony, Washing machine, Refrigerator, WiFi"
                     rows={2}
                   />
@@ -1997,12 +1678,7 @@ export default function AdminDashboard() {
                   <FormTextarea
                     label="Description"
                     value={form.description}
-                    onChange={(value) =>
-                      handleChange(
-                        'description',
-                        value
-                      )
-                    }
+                    onChange={(value) => handleChange("description", value)}
                     placeholder="Describe the apartment..."
                     rows={4}
                   />
@@ -2013,7 +1689,7 @@ export default function AdminDashboard() {
                 ========================= */}
 
                 <div className="md:col-span-2">
-                  <div className="mb-3 flex items-center justify-between">
+                  <div className="flex items-center justify-between mb-3">
                     <div>
                       <h3 className="text-sm font-bold text-slate-900">
                         Apartment images
@@ -2025,9 +1701,7 @@ export default function AdminDashboard() {
                     </div>
 
                     <span className="text-xs font-semibold text-slate-500">
-                      {form.images.length +
-                        selectedFiles.length}{' '}
-                      / 15
+                      {form.images.length + selectedFiles.length} / 15
                     </span>
                   </div>
 
@@ -2035,14 +1709,12 @@ export default function AdminDashboard() {
 
                   <label
                     className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-5 py-7 text-center transition ${
-                      form.images.length +
-                        selectedFiles.length >=
-                      15
-                        ? 'cursor-not-allowed border-slate-200 bg-slate-50 opacity-60'
-                        : 'border-slate-200 bg-slate-50 hover:border-slate-400 hover:bg-white'
+                      form.images.length + selectedFiles.length >= 15
+                        ? "cursor-not-allowed border-slate-200 bg-slate-50 opacity-60"
+                        : "border-slate-200 bg-slate-50 hover:border-slate-400 hover:bg-white"
                     }`}
                   >
-                    <div className="mb-2 flex h-11 w-11 items-center justify-center rounded-xl bg-white text-slate-500 shadow-sm">
+                    <div className="flex items-center justify-center mb-2 bg-white shadow-sm h-11 w-11 rounded-xl text-slate-500">
                       <ImagePlus size={21} />
                     </div>
 
@@ -2058,11 +1730,7 @@ export default function AdminDashboard() {
                       type="file"
                       accept="image/*"
                       multiple
-                      disabled={
-                        form.images.length +
-                          selectedFiles.length >=
-                        15
-                      }
+                      disabled={form.images.length + selectedFiles.length >= 15}
                       onChange={handleImageSelect}
                       className="hidden"
                     />
@@ -2077,20 +1745,14 @@ export default function AdminDashboard() {
                       </p>
 
                       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
-                        {form.images.map(
-                          (image, index) => (
-                            <ImagePreview
-                              key={`${image.url}-${index}`}
-                              src={image.url}
-                              onRemove={() =>
-                                removeExistingImage(
-                                  index
-                                )
-                              }
-                              label="Saved"
-                            />
-                          )
-                        )}
+                        {form.images.map((image, index) => (
+                          <ImagePreview
+                            key={`${image.url}-${index}`}
+                            src={image.url}
+                            onRemove={() => removeExistingImage(index)}
+                            label="Saved"
+                          />
+                        ))}
                       </div>
                     </div>
                   )}
@@ -2104,30 +1766,20 @@ export default function AdminDashboard() {
                       </p>
 
                       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
-                        {selectedFiles.map(
-                          (file, index) => (
-                            <NewImagePreview
-                              key={`${file.name}-${file.size}-${index}`}
-                              file={file}
-                              onRemove={() =>
-                                removeNewImage(
-                                  index
-                                )
-                              }
-                            />
-                          )
-                        )}
+                        {selectedFiles.map((file, index) => (
+                          <NewImagePreview
+                            key={`${file.name}-${file.size}-${index}`}
+                            file={file}
+                            onRemove={() => removeNewImage(index)}
+                          />
+                        ))}
                       </div>
                     </div>
                   )}
 
                   {uploadingImages && (
                     <div className="mt-3 flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2.5 text-xs font-medium text-slate-600">
-                      <Upload
-                        size={14}
-                        className="animate-pulse"
-                      />
-
+                      <Upload size={14} className="animate-pulse" />
                       Uploading images to Cloudinary...
                     </div>
                   )}
@@ -2136,13 +1788,11 @@ export default function AdminDashboard() {
 
               {/* FOOTER */}
 
-              <div className="flex flex-col-reverse gap-2 border-t border-slate-100 bg-slate-50 px-5 py-4 sm:flex-row sm:justify-end">
+              <div className="flex flex-col-reverse gap-2 px-5 py-4 border-t border-slate-100 bg-slate-50 sm:flex-row sm:justify-end">
                 <button
                   type="button"
                   onClick={closeModal}
-                  disabled={
-                    saving || uploadingImages
-                  }
+                  disabled={saving || uploadingImages}
                   className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:opacity-50"
                 >
                   Cancel
@@ -2150,29 +1800,20 @@ export default function AdminDashboard() {
 
                 <button
                   type="submit"
-                  disabled={
-                    saving || uploadingImages
-                  }
+                  disabled={saving || uploadingImages}
                   className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {saving ? (
                     <>
-                      <RefreshCw
-                        size={16}
-                        className="animate-spin"
-                      />
+                      <RefreshCw size={16} className="animate-spin" />
 
-                      {uploadingImages
-                        ? 'Uploading images...'
-                        : 'Saving...'}
+                      {uploadingImages ? "Uploading images..." : "Saving..."}
                     </>
                   ) : (
                     <>
                       <Save size={16} />
 
-                      {editingApartment
-                        ? 'Save changes'
-                        : 'Create apartment'}
+                      {editingApartment ? "Save changes" : "Create apartment"}
                     </>
                   )}
                 </button>
@@ -2186,8 +1827,8 @@ export default function AdminDashboard() {
 
       {deleteTarget && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-50 text-red-600">
+          <div className="w-full max-w-md p-5 bg-white shadow-2xl rounded-2xl">
+            <div className="flex items-center justify-center w-12 h-12 text-red-600 rounded-xl bg-red-50">
               <Trash2 size={22} />
             </div>
 
@@ -2196,20 +1837,18 @@ export default function AdminDashboard() {
             </h2>
 
             <p className="mt-2 text-sm leading-6 text-slate-500">
-              Are you sure you want to delete{' '}
+              Are you sure you want to delete{" "}
               <span className="font-semibold text-slate-700">
                 "{deleteTarget.title}"
               </span>
               ? This action cannot be undone.
             </p>
 
-            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <div className="flex flex-col-reverse gap-2 mt-5 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 disabled={deleting}
-                onClick={() =>
-                  setDeleteTarget(null)
-                }
+                onClick={() => setDeleteTarget(null)}
                 className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
               >
                 Cancel
@@ -2223,11 +1862,7 @@ export default function AdminDashboard() {
               >
                 {deleting ? (
                   <>
-                    <RefreshCw
-                      size={15}
-                      className="animate-spin"
-                    />
-
+                    <RefreshCw size={15} className="animate-spin" />
                     Deleting...
                   </>
                 ) : (
@@ -2252,30 +1887,20 @@ export default function AdminDashboard() {
 function StatCard({
   label,
   value,
-  valueClass = 'text-slate-900',
+  valueClass = "text-slate-900",
   icon,
   iconClass,
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="p-4 bg-white border shadow-sm rounded-2xl border-slate-200">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm font-medium text-slate-500">
-            {label}
-          </p>
+          <p className="text-sm font-medium text-slate-500">{label}</p>
 
-          <p
-            className={`mt-1 text-2xl font-bold ${valueClass}`}
-          >
-            {value}
-          </p>
+          <p className={`mt-1 text-2xl font-bold ${valueClass}`}>{value}</p>
         </div>
 
-        <div
-          className={`rounded-xl p-2.5 ${iconClass}`}
-        >
-          {icon}
-        </div>
+        <div className={`rounded-xl p-2.5 ${iconClass}`}>{icon}</div>
       </div>
     </div>
   );
@@ -2285,12 +1910,7 @@ function StatCard({
    FILTER SELECT
 ========================================================= */
 
-function FilterSelect({
-  label,
-  value,
-  onChange,
-  options,
-}) {
+function FilterSelect({ label, value, onChange, options }) {
   return (
     <div>
       <label className="mb-1.5 block text-xs font-semibold text-slate-500">
@@ -2299,16 +1919,11 @@ function FilterSelect({
 
       <select
         value={value}
-        onChange={(e) =>
-          onChange(e.target.value)
-        }
-        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-slate-400"
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full px-3 py-2 text-sm bg-white border rounded-lg outline-none border-slate-200 focus:border-slate-400"
       >
         {options.map(([optionValue, optionLabel]) => (
-          <option
-            key={optionValue}
-            value={optionValue}
-          >
+          <option key={optionValue} value={optionValue}>
             {optionLabel}
           </option>
         ))}
@@ -2321,20 +1936,15 @@ function FilterSelect({
    FACILITY FILTER
 ========================================================= */
 
-function FacilityFilter({
-  active,
-  onClick,
-  icon,
-  children,
-}) {
+function FacilityFilter({ active, onClick, icon, children }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition ${
         active
-          ? 'border-slate-900 bg-slate-900 text-white'
-          : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+          ? "border-slate-900 bg-slate-900 text-white"
+          : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
       }`}
     >
       {icon}
@@ -2362,18 +1972,10 @@ function TableHead({ children }) {
 function EmptyTable() {
   return (
     <tr>
-      <td
-        colSpan="6"
-        className="px-5 py-16 text-center"
-      >
-        <Building2
-          size={35}
-          className="mx-auto mb-3 text-slate-300"
-        />
+      <td colSpan="6" className="px-5 py-16 text-center">
+        <Building2 size={35} className="mx-auto mb-3 text-slate-300" />
 
-        <p className="font-semibold text-slate-700">
-          No apartments found
-        </p>
+        <p className="font-semibold text-slate-700">No apartments found</p>
 
         <p className="mt-1 text-sm text-slate-400">
           Try changing your search or filters.
@@ -2389,7 +1991,7 @@ function EmptyTable() {
 
 function DetailBadge({ icon, children }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2 py-1">
+    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100">
       {icon}
       {children}
     </span>
@@ -2400,11 +2002,7 @@ function DetailBadge({ icon, children }) {
    FEATURE BADGE
 ========================================================= */
 
-function FeatureBadge({
-  icon,
-  children,
-  className = '',
-}) {
+function FeatureBadge({ icon, children, className = "" }) {
   return (
     <span
       className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 ${className}`}
@@ -2419,18 +2017,10 @@ function FeatureBadge({
    IMAGE PREVIEW
 ========================================================= */
 
-function ImagePreview({
-  src,
-  onRemove,
-  label,
-}) {
+function ImagePreview({ src, onRemove, label }) {
   return (
-    <div className="group relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
-      <img
-        src={src}
-        alt={label}
-        className="h-full w-full object-cover"
-      />
+    <div className="relative overflow-hidden border group aspect-square rounded-xl border-slate-200 bg-slate-100">
+      <img src={src} alt={label} className="object-cover w-full h-full" />
 
       <div className="absolute left-1.5 top-1.5 rounded-md bg-black/60 px-1.5 py-1 text-[9px] font-semibold text-white">
         {label}
@@ -2452,11 +2042,8 @@ function ImagePreview({
    NEW IMAGE PREVIEW
 ========================================================= */
 
-function NewImagePreview({
-  file,
-  onRemove,
-}) {
-  const [preview, setPreview] = useState('');
+function NewImagePreview({ file, onRemove }) {
+  const [preview, setPreview] = useState("");
 
   useEffect(() => {
     const url = URL.createObjectURL(file);
@@ -2469,19 +2056,16 @@ function NewImagePreview({
   }, [file]);
 
   return (
-    <div className="group relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+    <div className="relative overflow-hidden border group aspect-square rounded-xl border-slate-200 bg-slate-100">
       {preview ? (
         <img
           src={preview}
           alt={file.name}
-          className="h-full w-full object-cover"
+          className="object-cover w-full h-full"
         />
       ) : (
-        <div className="flex h-full items-center justify-center">
-          <ImageIcon
-            size={22}
-            className="text-slate-300"
-          />
+        <div className="flex items-center justify-center h-full">
+          <ImageIcon size={22} className="text-slate-300" />
         </div>
       )}
 
@@ -2510,7 +2094,7 @@ function FormField({
   value,
   onChange,
   placeholder,
-  type = 'text',
+  type = "text",
   required = false,
 }) {
   return (
@@ -2518,19 +2102,13 @@ function FormField({
       <label className="mb-1.5 block text-xs font-semibold text-slate-600">
         {label}
 
-        {required && (
-          <span className="ml-1 text-red-500">
-            *
-          </span>
-        )}
+        {required && <span className="ml-1 text-red-500">*</span>}
       </label>
 
       <input
         type={type}
         value={value}
-        onChange={(e) =>
-          onChange(e.target.value)
-        }
+        onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-300 focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
       />
@@ -2542,13 +2120,7 @@ function FormField({
    TEXTAREA
 ========================================================= */
 
-function FormTextarea({
-  label,
-  value,
-  onChange,
-  placeholder,
-  rows = 3,
-}) {
+function FormTextarea({ label, value, onChange, placeholder, rows = 3 }) {
   return (
     <div>
       <label className="mb-1.5 block text-xs font-semibold text-slate-600">
@@ -2557,9 +2129,7 @@ function FormTextarea({
 
       <textarea
         value={value}
-        onChange={(e) =>
-          onChange(e.target.value)
-        }
+        onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         rows={rows}
         className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-300 focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
@@ -2572,19 +2142,15 @@ function FormTextarea({
    TOGGLE BUTTON
 ========================================================= */
 
-function ToggleButton({
-  active,
-  onClick,
-  children,
-}) {
+function ToggleButton({ active, onClick, children }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={`inline-flex items-center gap-2 rounded-xl border px-3.5 py-2.5 text-sm font-semibold transition ${
         active
-          ? 'border-slate-900 bg-slate-900 text-white'
-          : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+          ? "border-slate-900 bg-slate-900 text-white"
+          : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
       }`}
     >
       {children}
