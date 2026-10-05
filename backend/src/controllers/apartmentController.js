@@ -279,9 +279,9 @@ export const getApartments = async (req, res) => {
       sort = "price",
     } = req.query;
 
-    /* =========================
-       PAGINATION
-    ========================= */
+    // =====================================================
+    // PAGINATION
+    // =====================================================
 
     let safePage = Number(page);
 
@@ -297,79 +297,45 @@ export const getApartments = async (req, res) => {
       safeLimit = 9;
     }
 
-    safeLimit = Math.floor(safeLimit);
+    safeLimit = Math.min(Math.floor(safeLimit), 50);
 
-    // Không cho frontend request quá nhiều căn
-    safeLimit = Math.min(safeLimit, 50);
-
-    /* =========================
-       FILTER
-    ========================= */
+    // =====================================================
+    // FILTER
+    // =====================================================
 
     const filter = {
-      // PUBLIC WEBSITE CHỈ HIỂN THỊ AVAILABLE
       available: true,
     };
 
-    /* =========================
-       SEARCH
-    ========================= */
+    // =====================================================
+    // SEARCH
+    // =====================================================
 
     if (search?.trim()) {
       const safeKeyword = escapeRegex(search.trim());
 
       filter.$or = [
-        {
-          title: {
-            $regex: safeKeyword,
-            $options: "i",
-          },
-        },
-        {
-          address: {
-            $regex: safeKeyword,
-            $options: "i",
-          },
-        },
-        {
-          ward: {
-            $regex: safeKeyword,
-            $options: "i",
-          },
-        },
-        {
-          district: {
-            $regex: safeKeyword,
-            $options: "i",
-          },
-        },
-        {
-          city: {
-            $regex: safeKeyword,
-            $options: "i",
-          },
-        },
-        {
-          description: {
-            $regex: safeKeyword,
-            $options: "i",
-          },
-        },
+        { title: { $regex: safeKeyword, $options: "i" } },
+        { address: { $regex: safeKeyword, $options: "i" } },
+        { ward: { $regex: safeKeyword, $options: "i" } },
+        { district: { $regex: safeKeyword, $options: "i" } },
+        { city: { $regex: safeKeyword, $options: "i" } },
+        { description: { $regex: safeKeyword, $options: "i" } },
       ];
     }
 
-    /* =========================
-       PRICE
-    ========================= */
+    // =====================================================
+    // PRICE
+    // =====================================================
 
     if (minPrice || maxPrice) {
-      filter.price = {};
+      const price = {};
 
       if (minPrice) {
         const min = Number(minPrice);
 
         if (Number.isFinite(min)) {
-          filter.price.$gte = min;
+          price.$gte = min;
         }
       }
 
@@ -377,30 +343,75 @@ export const getApartments = async (req, res) => {
         const max = Number(maxPrice);
 
         if (Number.isFinite(max)) {
-          filter.price.$lte = max;
+          price.$lte = max;
         }
       }
 
-      if (Object.keys(filter.price).length === 0) {
-        delete filter.price;
+      if (Object.keys(price).length > 0) {
+        filter.price = price;
       }
     }
 
-    /* =========================
-       BEDROOMS
-    ========================= */
+    // =====================================================
+    // BEDROOMS
+    // =====================================================
 
     if (bedrooms !== undefined && bedrooms !== "") {
-      const value = Number(bedrooms);
+      const bedroomValues = String(bedrooms)
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean);
 
-      if (Number.isFinite(value)) {
-        filter.bedrooms = value;
+      const exactBedrooms = [];
+      let hasThreePlus = false;
+
+      bedroomValues.forEach((value) => {
+        if (value === "3+") {
+          hasThreePlus = true;
+          return;
+        }
+
+        const number = Number(value);
+
+        if (Number.isFinite(number)) {
+          exactBedrooms.push(number);
+        }
+      });
+
+      const bedroomConditions = [];
+
+      if (exactBedrooms.length > 0) {
+        bedroomConditions.push({
+          bedrooms: {
+            $in: exactBedrooms,
+          },
+        });
+      }
+
+      if (hasThreePlus) {
+        bedroomConditions.push({
+          bedrooms: {
+            $gte: 3,
+          },
+        });
+      }
+
+      if (bedroomConditions.length === 1) {
+        Object.assign(filter, bedroomConditions[0]);
+      }
+
+      if (bedroomConditions.length > 1) {
+        filter.$and = filter.$and || [];
+
+        filter.$and.push({
+          $or: bedroomConditions,
+        });
       }
     }
 
-    /* =========================
-       BATHROOMS
-    ========================= */
+    // =====================================================
+    // BATHROOMS
+    // =====================================================
 
     if (bathrooms !== undefined && bathrooms !== "") {
       const value = Number(bathrooms);
@@ -410,9 +421,9 @@ export const getApartments = async (req, res) => {
       }
     }
 
-    /* =========================
-       MAX OCCUPANTS
-    ========================= */
+    // =====================================================
+    // MAX OCCUPANTS
+    // =====================================================
 
     if (maxOccupants !== undefined && maxOccupants !== "") {
       const value = Number(maxOccupants);
@@ -424,9 +435,9 @@ export const getApartments = async (req, res) => {
       }
     }
 
-    /* =========================
-       DISTRICT
-    ========================= */
+    // =====================================================
+    // DISTRICT
+    // =====================================================
 
     if (district?.trim()) {
       filter.district = {
@@ -435,18 +446,18 @@ export const getApartments = async (req, res) => {
       };
     }
 
-    /* =========================
-       AREA
-    ========================= */
+    // =====================================================
+    // AREA
+    // =====================================================
 
     if (minArea || maxArea) {
-      filter.area = {};
+      const area = {};
 
       if (minArea) {
         const min = Number(minArea);
 
         if (Number.isFinite(min)) {
-          filter.area.$gte = min;
+          area.$gte = min;
         }
       }
 
@@ -454,18 +465,18 @@ export const getApartments = async (req, res) => {
         const max = Number(maxArea);
 
         if (Number.isFinite(max)) {
-          filter.area.$lte = max;
+          area.$lte = max;
         }
       }
 
-      if (Object.keys(filter.area).length === 0) {
-        delete filter.area;
+      if (Object.keys(area).length > 0) {
+        filter.area = area;
       }
     }
 
-    /* =========================
-       FACILITIES
-    ========================= */
+    // =====================================================
+    // FACILITIES
+    // =====================================================
 
     if (furnished === "true") {
       filter.furnished = true;
@@ -483,9 +494,9 @@ export const getApartments = async (req, res) => {
       filter.pool = true;
     }
 
-    /* =========================
-       SORT
-    ========================= */
+    // =====================================================
+    // SORT
+    // =====================================================
 
     let sortOption = {
       price: 1,
@@ -512,35 +523,69 @@ export const getApartments = async (req, res) => {
       };
     }
 
-    /* =========================
-       TOTAL
-    ========================= */
+    // =====================================================
+    // PAGINATION
+    // =====================================================
 
-    const total = await Apartment.countDocuments(filter);
+    const skip = (safePage - 1) * safeLimit;
 
-    const totalPages = total === 0 ? 0 : Math.ceil(total / safeLimit);
+    // =====================================================
+    // LISTING PROJECTION
+    // Không lấy description + các field không cần thiết
+    // =====================================================
 
-    /* =========================
-       ACTUAL PAGE
-    ========================= */
+    const listingProjection = {
+      title: 1,
+      address: 1,
+      ward: 1,
+      district: 1,
+      city: 1,
+      price: 1,
+      area: 1,
+      bedrooms: 1,
+      bathrooms: 1,
+      maxOccupants: 1,
+      rooms: 1,
+      furnished: 1,
+      amenities: 1,
+      images: 1,
+      available: 1,
+      gym: 1,
+      petFriendly: 1,
+      pool: 1,
+      createdAt: 1,
+    };
 
-    const actualPage = totalPages > 0 ? Math.min(safePage, totalPages) : 1;
+    // =====================================================
+    // COUNT + DATA CHẠY SONG SONG
+    // =====================================================
 
-    const skip = (actualPage - 1) * safeLimit;
+    const [total, apartments] = await Promise.all([
+      Apartment.countDocuments(filter),
 
-    /* =========================
-       GET APARTMENTS
-    ========================= */
+      Apartment.find(filter)
+        .select(listingProjection)
+        .sort(sortOption)
+        .skip(skip)
+        .limit(safeLimit)
+        .lean(),
+    ]);
 
-    const apartments = await Apartment.find(filter)
-      .sort(sortOption)
-      .skip(skip)
-      .limit(safeLimit)
-      .lean();
+    // =====================================================
+    // PAGINATION RESULT
+    // =====================================================
 
-    /* =========================
-       RESPONSE
-    ========================= */
+    const totalPages =
+      total === 0 ? 0 : Math.ceil(total / safeLimit);
+
+    const actualPage =
+      totalPages > 0
+        ? Math.min(safePage, totalPages)
+        : 1;
+
+    // Nếu frontend yêu cầu page quá lớn,
+    // query phía trên có thể trả [].
+    // Ta giữ pagination hiện tại đơn giản và ổn định.
 
     res.json({
       apartments,
@@ -557,7 +602,7 @@ export const getApartments = async (req, res) => {
     console.error("GET APARTMENTS ERROR:", error);
 
     res.status(500).json({
-      message: error.message,
+      message: "Failed to get apartments",
     });
   }
 };

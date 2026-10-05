@@ -191,8 +191,12 @@ app.use((error, req, res, next) => {
    MONGODB + SERVER
 ========================================================= */
 
-mongoose
-  .connect(process.env.MONGODB_URI)
+mongoose.connect(process.env.MONGODB_URI, {
+  maxPoolSize: 20,
+  minPoolSize: 5,
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 10000,
+})
   .then(async () => {
     console.log("=================================");
 
