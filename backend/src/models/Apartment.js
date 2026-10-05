@@ -2,25 +2,124 @@ import mongoose from 'mongoose';
 
 const apartmentSchema = new mongoose.Schema(
   {
-    title: { type: String, required: true },
-    address: { type: String, required: true },
-    district: { type: String, required: true },
-    city: { type: String, default: 'Ho Chi Minh City' },
-    price: { type: Number, required: true }, // USD / month
-    area: { type: Number, required: true }, // m²
-    bedrooms: { type: Number, required: true },
-    bathrooms: { type: Number, required: true },
-    maxOccupants: { type: Number, required: true },
-    rooms: { type: Number, required: true }, // total rooms
-    amenities: [{ type: String }],
-    description: { type: String },
-    images: [{ type: String }],
-    available: { type: Boolean, default: true },
-    furnished: { type: Boolean, default: true },
-    petFriendly: { type: Boolean, default: false },
-    nearMetro: { type: Boolean, default: false },
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    address: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    ward: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    district: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    city: {
+      type: String,
+      default: 'Da Nang',
+    },
+
+    price: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+
+    area: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+
+    bedrooms: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+
+    bathrooms: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+
+    maxOccupants: {
+      type: Number,
+      required: true,
+      min: 1,
+    },
+
+    rooms: {
+      type: Number,
+      required: true,
+      min: 1,
+    },
+
+    furnished: {
+      type: Boolean,
+      default: true,
+    },
+
+    amenities: [
+      {
+        type: String,
+      },
+    ],
+
+    description: {
+      type: String,
+      default: '',
+    },
+
+    images: [
+  {
+    url: {
+      type: String,
+      required: true,
+    },
+    publicId: {
+      type: String,
+      required: true,
+    },
   },
-  { timestamps: true }
+],
+
+    available: {
+      type: Boolean,
+      default: true,
+    },
+
+    gym: {
+      type: Boolean,
+      default: false,
+    },
+
+    petFriendly: {
+      type: Boolean,
+      default: false,
+    },
+
+    pool: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  {
+    timestamps: true,
+    collection: 'apartments',
+  }
 );
 
 export default mongoose.model('Apartment', apartmentSchema);

@@ -4,34 +4,35 @@ import img3 from "../assets/facilities/f3.jpg";
 import { motion } from "framer-motion";
 const items = [
   {
-    title: "La énMay Spa",
-    description: "A serene corner for premium experiences",
-    image: img1, // Replace with your image path
+    title: "Fitness Gym",
+    description:
+      "Stay active with our fully equipped modern gym, featuring cardio machines, free weights and everything you need for a great workout.",
+    image: img1,
   },
   {
-    title: "The Symphony Restaurant",
+    title: "Swimming Pool",
     description:
-      "An artfully blend of traditional Vietnamese ingredients and techniques with European culinary influences that promises unforgettable dining experience. We also offer an exceptional selection of authentic local cuisine.",
-    image: img2, // Replace with your image path
+      "Relax and unwind in our outdoor swimming pool with stunning views. Perfect for a refreshing dip or leisurely swim under the sun.",
+    image: img2,
   },
   {
-    title: "Majesty Sky Bar",
+    title: "Sauna",
     description:
-      "Immerse yourself in the vibrant nightlife of Hanoi from above",
-    image: img3, // Replace with your image path
+      "Rejuvenate your body and mind in our private sauna. A perfect place to destress and enjoy ultimate relaxation after a long day.",
+    image: img3,
   },
 ];
 
 function HoverCard({ title, image, description }) {
   return (
-    <div className="relative group w-[350px] max-w-[450px] sm:max-w-[500px] sm:w-[400px] md:w-[400px] hover:w-[850px] md:max-w-[850px] transition-all  h-[500px] duration-500 ">
+    <div className="relative group w-[350px] rounded-2xl overflow-hidden max-w-[450px] sm:max-w-[500px] sm:w-[400px] md:w-[400px] hover:w-[850px] md:max-w-[850px] transition-all  h-[500px] duration-500 ">
       <img
         src={image}
         className="absolute inset-0 object-cover w-full h-full "
         loading="lazy"
       />
-      <div className="absolute bottom-0 w-full px-8 pb-8 text-white duration-300 bg-black bg-opacity-50 opacity-0 group-hover:delay-300 font-playfair group-hover:opacity-100 ">
-        <h1 className="py-2 text-[20px] font-semibold ">{title}</h1>
+      <div className="absolute bottom-0 w-full px-8 pb-8 text-white duration-300 bg-black bg-opacity-50 opacity-0 group-hover:delay-300  group-hover:opacity-100 ">
+        <h1 className="py-2 text-[20px] font-semibold font-playfair ">{title}</h1>
         <p className="text-[15px]">{description}</p>
       </div>
       <div className="absolute inset-0 flex flex-col justify-end p-4 transition-opacity duration-300 bg-black opacity-100 bg-opacity-70 group-hover:hidden">
@@ -45,7 +46,7 @@ function HoverCard({ title, image, description }) {
 
 function ImageGrid() {
   return (
-    <div className="flex flex-col items-center  md:flex-row justify-center max-w-[1200px] py-2 sm:py-4 mx-auto ">
+    <div className="flex flex-col gap-4 sm:gap-6 py-4 sm:py-8 items-center md:flex-row justify-center max-w-[1200px] mx-auto">
       {items.map((item, index) => (
         <HoverCard
           key={index}
@@ -74,17 +75,16 @@ function Facilities() {
       }}
       className=""
     >
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <section className="max-w-7xl mx-auto px-4 mb-0 md:pb-12 sm:px-6 lg:px-8 py-6">
  <div className="px-2 md:px-24 w-full items-center  text-center">
         
-          <p className="text-2xl font-playfair lg:pb-2 font-semibold text-slate-900 uppercase md:text-xl xl:text-2xl">
+          <p className="font-playfair lg:pb-2 font-semibold text-slate-900 uppercase text-xl xl:text-2xl">
             Facilities
           </p>
       
        
-        <p className="text-[18px] font-thin">
-          Take a look at the rich list of facilities offered by our hotel. Every
-          small care has been taken to make your stay memorable and delightful.
+        <p className="text-sm md:text-lg  text-slate-500 mt-1">
+          Enjoy premium amenities designed for your comfort — from a modern gym and outdoor pool to a relaxing sauna, everything you need for a perfect stay.
         </p>
       </div>
 

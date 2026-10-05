@@ -1,9 +1,28 @@
 import axios from 'axios';
 
-const API = axios.create({
-  baseURL: '/api/apartments',
-});
+const API_URL =
+  'http://localhost:5000/api/v1/apartments';
 
-export const fetchApartments = (params = {}) => API.get('/', { params });
-export const fetchApartmentById = (id) => API.get(`/${id}`);
-export const fetchDistricts = () => API.get('/districts');
+export const fetchApartments = async (params = {}) => {
+  const response = await axios.get(API_URL, {
+    params,
+  });
+
+  return response.data;
+};
+
+export const fetchApartmentById = async (id) => {
+  const response = await axios.get(
+    `${API_URL}/${id}`
+  );
+  
+  return response.data;
+};
+
+export const fetchDistricts = async () => {
+  const response = await axios.get(
+    `${API_URL}/districts`
+  );
+
+  return response.data;
+};

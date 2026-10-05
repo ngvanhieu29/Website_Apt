@@ -1,17 +1,27 @@
 import { Search, X, SlidersHorizontal } from 'lucide-react';
 
-export default function FilterPanel({ filters, setFilters, districts, onReset }) {
+export default function FilterPanel({
+  filters,
+  setFilters,
+  districts,
+  onReset,
+}) {
   const handleChange = (key, value) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
+    setFilters((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
   };
 
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 sticky top-24">
+      {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <h3 className="font-semibold text-slate-900 flex items-center gap-2">
           <SlidersHorizontal className="w-4 h-4" />
           Filters
         </h3>
+
         <button
           onClick={onReset}
           className="text-xs text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
@@ -23,9 +33,13 @@ export default function FilterPanel({ filters, setFilters, districts, onReset })
 
       {/* Search */}
       <div className="mb-5">
-        <label className="block text-xs font-medium text-slate-500 mb-1.5">Search</label>
+        <label className="block text-xs font-medium text-slate-500 mb-1.5">
+          Search
+        </label>
+
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+
           <input
             type="text"
             placeholder="Address, district..."
@@ -38,14 +52,18 @@ export default function FilterPanel({ filters, setFilters, districts, onReset })
 
       {/* District */}
       <div className="mb-5">
-        <label className="block text-xs font-medium text-slate-500 mb-1.5">District</label>
+        <label className="block text-xs font-medium text-slate-500 mb-1.5">
+          District
+        </label>
+
         <select
           value={filters.district || ''}
           onChange={(e) => handleChange('district', e.target.value)}
           className="input-field text-sm"
         >
           <option value="">All Districts</option>
-          {districts.map((d) => (
+
+          {districts?.map((d) => (
             <option key={d} value={d}>
               {d}
             </option>
@@ -53,11 +71,12 @@ export default function FilterPanel({ filters, setFilters, districts, onReset })
         </select>
       </div>
 
-      {/* Price range */}
+      {/* Price */}
       <div className="mb-5">
         <label className="block text-xs font-medium text-slate-500 mb-1.5">
-          Price (USD / month)
+          Price (VND / month)
         </label>
+
         <div className="flex gap-2">
           <input
             type="number"
@@ -66,6 +85,7 @@ export default function FilterPanel({ filters, setFilters, districts, onReset })
             onChange={(e) => handleChange('minPrice', e.target.value)}
             className="input-field text-sm"
           />
+
           <input
             type="number"
             placeholder="Max"
@@ -78,11 +98,15 @@ export default function FilterPanel({ filters, setFilters, districts, onReset })
 
       {/* Bedrooms */}
       <div className="mb-5">
-        <label className="block text-xs font-medium text-slate-500 mb-1.5">Bedrooms</label>
+        <label className="block text-xs font-medium text-slate-500 mb-1.5">
+          Bedrooms
+        </label>
+
         <div className="flex flex-wrap gap-2">
-          {['', '0', '1', '2', '3'].map((val) => (
+          {['', '1', '2', '3'].map((val) => (
             <button
               key={val}
+              type="button"
               onClick={() => handleChange('bedrooms', val)}
               className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition ${
                 filters.bedrooms === val
@@ -90,7 +114,7 @@ export default function FilterPanel({ filters, setFilters, districts, onReset })
                   : 'bg-white text-slate-600 border-slate-200 hover:border-primary-300'
               }`}
             >
-              {val === '' ? 'Any' : val === '0' ? 'Studio' : val}
+              {val === '' ? 'Any' : val}
             </button>
           ))}
         </div>
@@ -98,11 +122,15 @@ export default function FilterPanel({ filters, setFilters, districts, onReset })
 
       {/* Bathrooms */}
       <div className="mb-5">
-        <label className="block text-xs font-medium text-slate-500 mb-1.5">Bathrooms</label>
+        <label className="block text-xs font-medium text-slate-500 mb-1.5">
+          Bathrooms
+        </label>
+
         <div className="flex flex-wrap gap-2">
           {['', '1', '2', '3'].map((val) => (
             <button
               key={val}
+              type="button"
               onClick={() => handleChange('bathrooms', val)}
               className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition ${
                 filters.bathrooms === val
@@ -118,7 +146,10 @@ export default function FilterPanel({ filters, setFilters, districts, onReset })
 
       {/* Area */}
       <div className="mb-5">
-        <label className="block text-xs font-medium text-slate-500 mb-1.5">Area (m²)</label>
+        <label className="block text-xs font-medium text-slate-500 mb-1.5">
+          Area (m²)
+        </label>
+
         <div className="flex gap-2">
           <input
             type="number"
@@ -127,6 +158,7 @@ export default function FilterPanel({ filters, setFilters, districts, onReset })
             onChange={(e) => handleChange('minArea', e.target.value)}
             className="input-field text-sm"
           />
+
           <input
             type="number"
             placeholder="Max"
@@ -142,43 +174,75 @@ export default function FilterPanel({ filters, setFilters, districts, onReset })
         <label className="block text-xs font-medium text-slate-500 mb-1.5">
           Min. Occupants
         </label>
+
         <input
           type="number"
           placeholder="e.g. 2"
           value={filters.maxOccupants || ''}
-          onChange={(e) => handleChange('maxOccupants', e.target.value)}
+          onChange={(e) =>
+            handleChange('maxOccupants', e.target.value)
+          }
           className="input-field text-sm"
         />
       </div>
 
       {/* Checkboxes */}
       <div className="space-y-3">
+        {/* Gym */}
         <label className="flex items-center gap-2.5 cursor-pointer">
           <input
             type="checkbox"
-            checked={filters.furnished === 'true'}
-            onChange={(e) => handleChange('furnished', e.target.checked ? 'true' : '')}
+            checked={filters.gym === 'true'}
+            onChange={(e) =>
+              handleChange(
+                'gym',
+                e.target.checked ? 'true' : ''
+              )
+            }
             className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
           />
-          <span className="text-sm text-slate-700">Furnished</span>
+
+          <span className="text-sm text-slate-700">
+            Gym
+          </span>
         </label>
+
+        {/* Pet Friendly */}
         <label className="flex items-center gap-2.5 cursor-pointer">
           <input
             type="checkbox"
             checked={filters.petFriendly === 'true'}
-            onChange={(e) => handleChange('petFriendly', e.target.checked ? 'true' : '')}
+            onChange={(e) =>
+              handleChange(
+                'petFriendly',
+                e.target.checked ? 'true' : ''
+              )
+            }
             className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
           />
-          <span className="text-sm text-slate-700">Pet Friendly</span>
+
+          <span className="text-sm text-slate-700">
+            Pet Friendly
+          </span>
         </label>
+
+        {/* Pool */}
         <label className="flex items-center gap-2.5 cursor-pointer">
           <input
             type="checkbox"
-            checked={filters.nearMetro === 'true'}
-            onChange={(e) => handleChange('nearMetro', e.target.checked ? 'true' : '')}
+            checked={filters.pool === 'true'}
+            onChange={(e) =>
+              handleChange(
+                'pool',
+                e.target.checked ? 'true' : ''
+              )
+            }
             className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
           />
-          <span className="text-sm text-slate-700">Near Metro</span>
+
+          <span className="text-sm text-slate-700">
+            Pool
+          </span>
         </label>
       </div>
     </div>
