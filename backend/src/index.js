@@ -60,12 +60,16 @@ app.use(
 /* =========================================================
    GLOBAL RATE LIMIT
 ========================================================= */
+/* =========================================================
+   RATE LIMIT
+========================================================= */
 
-const globalLimiter = rateLimit({
+// PUBLIC API
+// Cho phép người dùng duyệt/lọc apartment thoải mái hơn.
+// Giới hạn theo IP: 300 requests / 15 phút.
+const publicApiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-
-  // 100 request / 15 phút / IP
-  max: 100,
+  max: 300,
 
   standardHeaders: true,
   legacyHeaders: false,
@@ -75,23 +79,18 @@ const globalLimiter = rateLimit({
   },
 });
 
-app.use("/api", globalLimiter);
-
-/* =========================================================
-   ADMIN LOGIN RATE LIMIT
-========================================================= */
-
+// ADMIN LOGIN
+// Chống brute-force tài khoản Admin.
 const adminLoginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-
-  // Tối đa 10 lần đăng nhập / 15 phút / IP
   max: 10,
 
   standardHeaders: true,
   legacyHeaders: false,
 
   message: {
-    message: "Quá nhiều lần đăng nhập Admin. Vui lòng thử lại sau 15 phút.",
+    message:
+      "Quá nhiều lần đăng nhập Admin. Vui lòng thử lại sau 15 phút.",
   },
 });
 
@@ -100,6 +99,7 @@ const adminLoginLimiter = rateLimit({
 ========================================================= */
 
 // PUBLIC APARTMENTS
+app.use("/api/v1/apartments", publicApiLimiter);
 app.use("/api/v1/apartments", apartmentRoutes);
 
 // ADMIN LOGIN RATE LIMIT
