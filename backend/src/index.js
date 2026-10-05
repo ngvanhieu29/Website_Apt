@@ -35,8 +35,10 @@ app.use(
 // Local development
 // Sau khi deploy frontend lên Vercel,
 // thêm domain Vercel vào danh sách này.
-
-const allowedOrigins = ["http://localhost:5173"];
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://website-apt-five.vercel.app/",
+];
 
 app.use(
   cors({
