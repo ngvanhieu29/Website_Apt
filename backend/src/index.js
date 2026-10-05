@@ -18,10 +18,8 @@ const PORT = process.env.PORT || 5000;
    BASIC SECURITY
 ========================================================= */
 
-// Không cho Express tiết lộ "Express" trong response header
 app.disable("x-powered-by");
 
-// Thêm các HTTP security headers
 app.use(
   helmet({
     crossOriginResourcePolicy: {
@@ -34,17 +32,17 @@ app.use(
    CORS
 ========================================================= */
 
-const allowedOrigins = ["http://localhost:5173"];
+// Local development
+// Sau khi deploy frontend lên Vercel,
+// thêm domain Vercel vào danh sách này.
 
-// Nếu sau này deploy frontend thì thêm domain vào đây.
-// Ví dụ:
-// "https://danangstayhub.com"
+const allowedOrigins = ["http://localhost:5173"];
 
 app.use(
   cors({
     origin: (origin, callback) => {
       // Cho phép request không có Origin
-      // Ví dụ Postman / server-to-server
+      // Ví dụ: Postman / server-to-server
       if (!origin) {
         return callback(null, true);
       }
@@ -68,9 +66,6 @@ app.use(
    BODY LIMIT
 ========================================================= */
 
-// Không cho client gửi JSON quá lớn
-// Hình ảnh nên upload qua Cloudinary riêng,
-// không gửi trực tiếp vào JSON.
 app.use(
   express.json({
     limit: "1mb",
@@ -81,18 +76,13 @@ app.use(
    GLOBAL RATE LIMIT
 ========================================================= */
 
-// Giới hạn request toàn API
-//
-// 100 request / 10 phút / IP
-//
-// Không quá chặt để website bình thường vẫn hoạt động.
 const globalLimiter = rateLimit({
-  windowMs: 10 * 60 * 1000,
+  windowMs: 15 * 60 * 1000,
 
+  // 100 request / 15 phút / IP
   max: 100,
 
   standardHeaders: true,
-
   legacyHeaders: false,
 
   message: {
@@ -106,18 +96,13 @@ app.use("/api", globalLimiter);
    ADMIN LOGIN RATE LIMIT
 ========================================================= */
 
-// Admin login cần chặt hơn API bình thường.
-//
-// 10 lần / 15 phút / IP
-//
-// Giúp hạn chế brute-force username/password.
 const adminLoginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
 
+  // Tối đa 10 lần đăng nhập / 15 phút / IP
   max: 10,
 
   standardHeaders: true,
-
   legacyHeaders: false,
 
   message: {
@@ -132,13 +117,10 @@ const adminLoginLimiter = rateLimit({
 // PUBLIC APARTMENTS
 app.use("/api/v1/apartments", apartmentRoutes);
 
-// ADMIN
-//
-// Chỉ rate-limit endpoint login.
-// Các API Admin khác vẫn được bảo vệ
-// bằng adminAuth middleware.
+// ADMIN LOGIN RATE LIMIT
 app.use("/api/v1/admin/login", adminLoginLimiter);
 
+// ADMIN
 app.use("/api/v1/admin", adminRoutes);
 
 // CLOUDINARY IMAGE API
@@ -171,21 +153,24 @@ app.use((req, res) => {
 app.use((error, req, res, next) => {
   console.error("GLOBAL ERROR:", error);
 
-  // CORS error
+  /* CORS ERROR */
+
   if (error.message?.startsWith("CORS:")) {
     return res.status(403).json({
       message: "Request từ origin không được phép",
     });
   }
 
-  // MongoDB duplicate key
+  /* MONGODB DUPLICATE KEY */
+
   if (error.code === 11000) {
     return res.status(409).json({
       message: "Dữ liệu đã tồn tại.",
     });
   }
 
-  // Mongoose validation
+  /* MONGOOSE VALIDATION */
+
   if (error.name === "ValidationError") {
     return res.status(400).json({
       message: "Dữ liệu không hợp lệ.",
@@ -193,15 +178,16 @@ app.use((error, req, res, next) => {
     });
   }
 
-  // Mongoose CastError
+  /* MONGOOSE CAST ERROR */
+
   if (error.name === "CastError") {
     return res.status(400).json({
       message: "ID hoặc dữ liệu không hợp lệ.",
     });
   }
 
-  // Production:
-  // Không trả stack trace cho client.
+  /* GENERAL ERROR */
+
   res.status(error.statusCode || 500).json({
     message: error.statusCode ? error.message : "Internal server error",
   });
@@ -229,7 +215,7 @@ mongoose
     console.log("=================================");
 
     app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
+      console.log(`🚀 Server running on port ${PORT}`);
     });
   })
   .catch((error) => {
@@ -239,7 +225,7 @@ mongoose
   });
 
 /* =========================================================
-   MONGODB ERROR EVENTS
+   MONGODB RUNTIME EVENTS
 ========================================================= */
 
 mongoose.connection.on("error", (error) => {
