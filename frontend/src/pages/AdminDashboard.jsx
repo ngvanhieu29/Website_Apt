@@ -1110,7 +1110,9 @@ export default function AdminDashboard() {
                         <td className="px-4 py-4">
                           <div className="flex flex-wrap gap-2 text-xs text-slate-500">
                             <DetailBadge icon={<BedDouble size={13} />}>
-                              {apartment.bedrooms} BR
+                              {apartment.bedrooms === 0
+                                ? "Studio"
+                                : `${apartment.bedrooms} BR`}
                             </DetailBadge>
 
                             <DetailBadge icon={<Bath size={13} />}>
@@ -1569,13 +1571,25 @@ export default function AdminDashboard() {
                       placeholder="50"
                     />
 
-                    <FormField
-                      label="Bedrooms"
-                      type="number"
-                      value={form.bedrooms}
-                      onChange={(value) => handleChange("bedrooms", value)}
-                      placeholder="1"
-                    />
+                    <div>
+                      <label className="mb-1.5 block text-xs font-medium text-slate-600">
+                        Bedrooms
+                      </label>
+
+                      <select
+                        value={form.bedrooms}
+                        onChange={(e) =>
+                          handleChange("bedrooms", e.target.value)
+                        }
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                      >
+                        <option value="">Select</option>
+                        <option value="0">Studio</option>
+                        <option value="1">1 Bedroom</option>
+                        <option value="2">2 Bedrooms</option>
+                        <option value="3">3 Bedrooms</option>
+                      </select>
+                    </div>
 
                     <FormField
                       label="Bathrooms"
