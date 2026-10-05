@@ -1689,6 +1689,9 @@ export default function AdminDashboard() {
                       "Pool",
                       "Near Beach",
                       "Soundproofing",
+                      "New",
+                      "Spacious",
+                      "High-end"
                     ].map((amenity) => {
                       const checked = form.amenities.includes(amenity);
 
