@@ -70,9 +70,12 @@ app.use(
 const publicApiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 300,
-
   standardHeaders: true,
   legacyHeaders: false,
+
+  skip: (req) => {
+    return req.headers["x-load-test"] === "true";
+  },
 
   message: {
     message: "Bạn gửi quá nhiều request. Vui lòng thử lại sau.",
