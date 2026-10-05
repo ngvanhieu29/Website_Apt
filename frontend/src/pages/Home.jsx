@@ -21,7 +21,7 @@ const defaultFilters = {
   district: "",
   minPrice: "",
   maxPrice: "",
-  bedrooms: "",
+  bedrooms: [],
   bathrooms: "",
   minArea: "",
   maxArea: "",
@@ -80,10 +80,17 @@ export default function Home() {
         =============================================== */
 
       Object.entries(filters).forEach(([key, value]) => {
-        if (value !== "" && value !== null && value !== undefined) {
-          params[key] = value;
-        }
-      });
+  if (
+    value !== "" &&
+    value !== null &&
+    value !== undefined &&
+    !(Array.isArray(value) && value.length === 0)
+  ) {
+    params[key] = Array.isArray(value)
+      ? value.join(",")
+      : value;
+  }
+});
 
       /* ===============================================
            API

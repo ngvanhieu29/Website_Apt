@@ -70,20 +70,51 @@ const buildAdminFilter = (query) => {
   /* =========================
      BEDROOMS
   ========================= */
+if (bedrooms !== undefined && bedrooms !== "") {
+  const bedroomValues = String(bedrooms)
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
 
-  if (bedrooms !== "all" && bedrooms !== "") {
-    if (bedrooms === "3+") {
-      filter.bedrooms = {
-        $gte: 3,
-      };
-    } else {
-      const bedroomNumber = Number(bedrooms);
+  const exactBedrooms = [];
+  let hasThreePlus = false;
 
-      if (Number.isFinite(bedroomNumber)) {
-        filter.bedrooms = bedroomNumber;
-      }
+  bedroomValues.forEach((value) => {
+    if (value === "3+") {
+      hasThreePlus = true;
+      return;
     }
+
+    const number = Number(value);
+
+    if (Number.isFinite(number)) {
+      exactBedrooms.push(number);
+    }
+  });
+
+  if (hasThreePlus && exactBedrooms.length > 0) {
+    filter.$or = [
+      {
+        bedrooms: {
+          $in: exactBedrooms,
+        },
+      },
+      {
+        bedrooms: {
+          $gte: 3,
+        },
+      },
+    ];
+  } else if (hasThreePlus) {
+    filter.bedrooms = {
+      $gte: 3,
+    };
+  } else if (exactBedrooms.length > 0) {
+    filter.bedrooms = {
+      $in: exactBedrooms,
+    };
   }
+}
 
   /* =========================
      PRICE
