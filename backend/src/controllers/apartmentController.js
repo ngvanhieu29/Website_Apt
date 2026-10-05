@@ -596,7 +596,9 @@ export const getApartments = async (req, res) => {
       rooms: 1,
       furnished: 1,
       amenities: 1,
-      images: 1,
+      images: {
+  $slice: 1,
+},
       available: 1,
       gym: 1,
       petFriendly: 1,
