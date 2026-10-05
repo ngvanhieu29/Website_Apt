@@ -613,7 +613,23 @@ export const getApartments = async (req, res) => {
 
 export const getApartmentById = async (req, res) => {
   try {
-    const apartment = await Apartment.findById(req.params.id).lean();
+    const dbStart = Date.now();
+
+const [total, apartments] = await Promise.all([
+  Apartment.countDocuments(filter),
+  Apartment.find(filter)
+    .select(listingProjection)
+    .sort(sortOption)
+    .skip(skip)
+    .limit(safeLimit)
+    .lean(),
+]);
+
+const dbTime = Date.now() - dbStart;
+
+console.log(
+  `[GET /apartments] db=${dbTime}ms total=${total} rows=${apartments.length}`
+);
 
     if (!apartment) {
       return res.status(404).json({

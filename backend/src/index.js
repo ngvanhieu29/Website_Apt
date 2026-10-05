@@ -96,7 +96,19 @@ const adminLoginLimiter = rateLimit({
       "Quá nhiều lần đăng nhập Admin. Vui lòng thử lại sau 15 phút.",
   },
 });
+app.use((req, res, next) => {
+  const start = Date.now();
 
+  res.on("finish", () => {
+    if (req.path.includes("/api/v1/apartments")) {
+      console.log(
+        `[REQUEST] ${req.method} ${req.originalUrl} ${res.statusCode} ${Date.now() - start}ms`
+      );
+    }
+  });
+
+  next();
+});
 /* =========================================================
    ROUTES
 ========================================================= */
