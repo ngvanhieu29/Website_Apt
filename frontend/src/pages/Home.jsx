@@ -408,9 +408,7 @@ export default function Home() {
               Apartment
             </h2>
 
-            <p className="text-[16px] text-slate-500 mt-0.5">
-              Available for rent: {loading ? "Loading..." : pagination.total}
-            </p>
+           
           </div>
 
           {/* Sort + Filter */}
