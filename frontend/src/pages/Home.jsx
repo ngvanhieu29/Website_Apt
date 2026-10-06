@@ -323,19 +323,17 @@ export default function Home() {
   ======================================================= */
 
   const handlePageChange = (page) => {
-    if (page < 1 || page > totalPages || page === currentPage) {
-      return;
-    }
+  if (page < 1 || page > totalPages || page === currentPage) {
+    return;
+  }
 
-    setCurrentPage(page);
+  setCurrentPage(page);
 
-    setTimeout(() => {
-      apartmentSectionRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }, 50);
-  };
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth",
+  });
+};
 
   /* =======================================================
      RENDER
