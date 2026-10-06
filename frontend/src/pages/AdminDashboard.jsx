@@ -1691,7 +1691,10 @@ export default function AdminDashboard() {
                       "Soundproofing",
                       "New",
                       "Spacious",
-                      "High-end"
+                      "High-end",
+                      "High-speed Internet",
+                      "Cleaning Service",
+                      "Open View",
                     ].map((amenity) => {
                       const checked = form.amenities.includes(amenity);
 
