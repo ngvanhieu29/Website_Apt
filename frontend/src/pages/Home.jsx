@@ -29,7 +29,7 @@ const createDefaultFilters = () => ({
   pool: "",
   petFriendly: "",
   gym: "",
-  sort: "price",
+  sort: "price-desc",
 });
 
 export default function Home() {
