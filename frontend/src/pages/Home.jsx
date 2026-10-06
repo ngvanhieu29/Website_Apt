@@ -16,7 +16,7 @@ import Facilities from "../components/Facilities";
    DEFAULT FILTERS
 ========================================================= */
 
-const defaultFilters = {
+const createDefaultFilters = () => ({
   search: "",
   district: "",
   minPrice: "",
@@ -30,23 +30,32 @@ const defaultFilters = {
   petFriendly: "",
   gym: "",
   sort: "price",
-};
+});
 
 export default function Home() {
   /* =======================================================
      STATE
   ======================================================= */
 
+  // Danh sách apartment đang hiển thị
   const [apartments, setApartments] = useState([]);
 
+  // Danh sách district
   const [districts, setDistricts] = useState([]);
 
-  const [filters, setFilters] = useState(defaultFilters);
+  // Filter người dùng đang chỉnh
+  const [filters, setFilters] = useState(createDefaultFilters);
 
+  // Filter thực sự đã Apply
+  const [appliedFilters, setAppliedFilters] = useState(createDefaultFilters);
+
+  // Loading apartment
   const [loading, setLoading] = useState(true);
 
+  // Mobile filter drawer
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
+  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
 
   const [pagination, setPagination] = useState({
@@ -58,8 +67,12 @@ export default function Home() {
     hasPrevPage: false,
   });
 
+  // Dùng để biết sau khi Apply có cần scroll tới card đầu tiên hay không
+  const [shouldScrollAfterApply, setShouldScrollAfterApply] = useState(false);
+
   const itemsPerPage = 9;
 
+  // Ref tới CARD ĐẦU TIÊN
   const apartmentSectionRef = useRef(null);
 
   /* =======================================================
@@ -76,31 +89,29 @@ export default function Home() {
       };
 
       /* ===============================================
-           FILTERS
-        =============================================== */
+         APPLIED FILTERS
+      =============================================== */
 
-      Object.entries(filters).forEach(([key, value]) => {
-  if (
-    value !== "" &&
-    value !== null &&
-    value !== undefined &&
-    !(Array.isArray(value) && value.length === 0)
-  ) {
-    params[key] = Array.isArray(value)
-      ? value.join(",")
-      : value;
-  }
-});
+      Object.entries(appliedFilters).forEach(([key, value]) => {
+        if (
+          value !== "" &&
+          value !== null &&
+          value !== undefined &&
+          !(Array.isArray(value) && value.length === 0)
+        ) {
+          params[key] = Array.isArray(value) ? value.join(",") : value;
+        }
+      });
 
       /* ===============================================
-           API
-        =============================================== */
+         API
+      =============================================== */
 
       const data = await fetchApartments(params);
 
       /* ===============================================
-           APARTMENTS
-        =============================================== */
+         APARTMENTS
+      =============================================== */
 
       const apartmentList = Array.isArray(data?.apartments)
         ? data.apartments
@@ -109,8 +120,8 @@ export default function Home() {
       setApartments(apartmentList);
 
       /* ===============================================
-           PAGINATION
-        =============================================== */
+         PAGINATION
+      =============================================== */
 
       const paginationData = data?.pagination;
 
@@ -126,9 +137,8 @@ export default function Home() {
       );
 
       /* ===============================================
-           BACKEND CÓ THỂ TRẢ VỀ PAGE CUỐI
-           NẾU CURRENT PAGE KHÔNG CÒN TỒN TẠI
-        =============================================== */
+         BACKEND CÓ THỂ TRẢ VỀ PAGE KHÁC
+      =============================================== */
 
       if (paginationData?.page && paginationData.page !== currentPage) {
         setCurrentPage(paginationData.page);
@@ -149,7 +159,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [filters, currentPage]);
+  }, [appliedFilters, currentPage]);
 
   /* =======================================================
      LOAD DISTRICTS
@@ -172,53 +182,79 @@ export default function Home() {
   }, []);
 
   /* =======================================================
-     LOAD APARTMENTS WHEN FILTERS / PAGE CHANGE
+     LOAD APARTMENTS
+     
+     API chỉ chạy khi:
+     - appliedFilters thay đổi
+     - currentPage thay đổi
   ======================================================= */
 
   useEffect(() => {
-    const timer = setTimeout(
-      () => {
-        loadData();
-      },
-      filters.search.trim() ? 350 : 0,
-    );
+    loadData();
+  }, [loadData]);
 
-    return () => clearTimeout(timer);
-  }, [loadData, filters.search]);
+  /* =======================================================
+     APPLY FILTERS
+  ======================================================= */
+
+  const handleApplyFilters = () => {
+    setAppliedFilters({
+      ...filters,
+      bedrooms: [...filters.bedrooms],
+    });
+
+    // Apply filter mới -> page 1
+    setCurrentPage(1);
+
+    // Đóng mobile drawer
+    setMobileFilterOpen(false);
+
+    // Báo rằng sau khi dữ liệu mới load xong phải scroll
+    setShouldScrollAfterApply(true);
+  };
+
+  /* =======================================================
+     SCROLL TO FIRST CARD AFTER APPLY
+  ======================================================= */
+
+  useEffect(() => {
+    if (!shouldScrollAfterApply || loading || apartments.length === 0) {
+      return;
+    }
+
+    // Đợi DOM render card đầu tiên
+    requestAnimationFrame(() => {
+      apartmentSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+
+      setShouldScrollAfterApply(false);
+    });
+  }, [apartments, loading, shouldScrollAfterApply]);
 
   /* =======================================================
      RESET FILTERS
   ======================================================= */
 
   const resetFilters = () => {
-    setFilters({
-      ...defaultFilters,
-    });
+    const reset = createDefaultFilters();
 
+    // Reset UI filter
+    setFilters(reset);
+
+    // Reset filter đang áp dụng
+    setAppliedFilters(reset);
+
+    // Về page 1
     setCurrentPage(1);
+
+    // Đóng mobile filter
+    setMobileFilterOpen(false);
+
+    // Không cần scroll khi Reset
+    setShouldScrollAfterApply(false);
   };
-
-  /* =======================================================
-     RESET PAGE WHEN FILTER CHANGES
-  ======================================================= */
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [
-    filters.search,
-    filters.district,
-    filters.minPrice,
-    filters.maxPrice,
-    filters.bedrooms,
-    filters.bathrooms,
-    filters.minArea,
-    filters.maxArea,
-    filters.maxOccupants,
-    filters.pool,
-    filters.petFriendly,
-    filters.gym,
-    filters.sort,
-  ]);
 
   /* =======================================================
      PAGINATION
@@ -323,10 +359,7 @@ export default function Home() {
           MAIN CONTENT
       ================================================== */}
 
-      <section
-        ref={apartmentSectionRef}
-        className="px-4 mx-auto my-8 max-w-7xl sm:px-6 lg:px-8 md:py-10"
-      >
+      <section className="px-4 mx-auto my-8 max-w-7xl sm:px-6 lg:px-8 md:py-10">
         {/* ==================================================
             TITLE + SORT
         ================================================== */}
@@ -390,6 +423,7 @@ export default function Home() {
               setFilters={setFilters}
               districts={districts}
               onReset={resetFilters}
+              onApply={handleApplyFilters}
             />
           </aside>
 
@@ -424,8 +458,13 @@ export default function Home() {
               ============================================ */
 
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                {apartments.map((apt) => (
-                  <ApartmentCard key={apt._id} apartment={apt} />
+                {apartments.map((apt, index) => (
+                  <div
+                    key={apt._id}
+                    ref={index === 0 ? apartmentSectionRef : null}
+                  >
+                    <ApartmentCard apartment={apt} />
+                  </div>
                 ))}
               </div>
             )}
@@ -515,14 +554,9 @@ export default function Home() {
               setFilters={setFilters}
               districts={districts}
               onReset={resetFilters}
+              onApply={handleApplyFilters}
+              onClose={() => setMobileFilterOpen(false)}
             />
-
-            <button
-              className="w-full mt-4 btn-primary"
-              onClick={() => setMobileFilterOpen(false)}
-            >
-              Apply Filters
-            </button>
           </div>
         </div>
       )}
