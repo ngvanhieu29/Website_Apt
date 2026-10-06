@@ -37,7 +37,7 @@ export default function Home() {
      STATE
   ======================================================= */
 
-  // Danh sách apartment đang hiển thị
+  // Danh sách apartment
   const [apartments, setApartments] = useState([]);
 
   // Danh sách district
@@ -49,15 +49,16 @@ export default function Home() {
   // Filter thực sự đã Apply
   const [appliedFilters, setAppliedFilters] = useState(createDefaultFilters);
 
-  // Loading apartment
+  // Loading
   const [loading, setLoading] = useState(true);
 
   // Mobile filter drawer
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
-  // Pagination
+  // Current page
   const [currentPage, setCurrentPage] = useState(1);
 
+  // Pagination
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 9,
@@ -67,12 +68,12 @@ export default function Home() {
     hasPrevPage: false,
   });
 
-  // Dùng để biết sau khi Apply có cần scroll tới card đầu tiên hay không
-  const [shouldScrollAfterApply, setShouldScrollAfterApply] = useState(false);
+  // Sau khi Apply / Sort xong thì scroll tới card đầu tiên
+  const [shouldScrollAfterChange, setShouldScrollAfterChange] = useState(false);
 
   const itemsPerPage = 9;
 
-  // Ref tới CARD ĐẦU TIÊN
+  // Ref tới card đầu tiên
   const apartmentSectionRef = useRef(null);
 
   /* =======================================================
@@ -184,7 +185,7 @@ export default function Home() {
   /* =======================================================
      LOAD APARTMENTS
      
-     API chỉ chạy khi:
+     Chỉ chạy khi:
      - appliedFilters thay đổi
      - currentPage thay đổi
   ======================================================= */
@@ -195,6 +196,8 @@ export default function Home() {
 
   /* =======================================================
      APPLY FILTERS
+     
+     Filter thường chỉ được áp dụng khi bấm nút Apply Filters
   ======================================================= */
 
   const handleApplyFilters = () => {
@@ -203,35 +206,68 @@ export default function Home() {
       bedrooms: [...filters.bedrooms],
     });
 
-    // Apply filter mới -> page 1
+    // Filter mới -> page 1
     setCurrentPage(1);
 
     // Đóng mobile drawer
     setMobileFilterOpen(false);
 
-    // Báo rằng sau khi dữ liệu mới load xong phải scroll
-    setShouldScrollAfterApply(true);
+    // Sau khi load xong sẽ scroll tới card đầu tiên
+    setShouldScrollAfterChange(true);
   };
 
   /* =======================================================
-     SCROLL TO FIRST CARD AFTER APPLY
+     SORT
+     
+     Sort hoạt động NGAY, không cần bấm Apply Filters
+  ======================================================= */
+
+  const handleSortChange = (e) => {
+    const newSort = e.target.value;
+
+    // Cập nhật UI
+    setFilters((prev) => ({
+      ...prev,
+      sort: newSort,
+    }));
+
+    // Sort áp dụng ngay
+    setAppliedFilters((prev) => ({
+      ...prev,
+      sort: newSort,
+    }));
+
+    // Sort mới luôn bắt đầu từ page 1
+    setCurrentPage(1);
+
+    // Sau khi load xong scroll tới card đầu tiên
+    setShouldScrollAfterChange(true);
+  };
+
+  /* =======================================================
+     SCROLL TO FIRST CARD
+     
+     Chỉ scroll sau khi:
+     - Apply Filter
+     - Sort
+     
+     Và phải đợi dữ liệu mới load xong
   ======================================================= */
 
   useEffect(() => {
-    if (!shouldScrollAfterApply || loading || apartments.length === 0) {
+    if (!shouldScrollAfterChange || loading || apartments.length === 0) {
       return;
     }
 
-    // Đợi DOM render card đầu tiên
     requestAnimationFrame(() => {
       apartmentSectionRef.current?.scrollIntoView({
         behavior: "smooth",
         block: "start",
       });
 
-      setShouldScrollAfterApply(false);
+      setShouldScrollAfterChange(false);
     });
-  }, [apartments, loading, shouldScrollAfterApply]);
+  }, [apartments, loading, shouldScrollAfterChange]);
 
   /* =======================================================
      RESET FILTERS
@@ -240,20 +276,20 @@ export default function Home() {
   const resetFilters = () => {
     const reset = createDefaultFilters();
 
-    // Reset UI filter
+    // Reset UI
     setFilters(reset);
 
     // Reset filter đang áp dụng
     setAppliedFilters(reset);
 
-    // Về page 1
+    // Page 1
     setCurrentPage(1);
 
-    // Đóng mobile filter
+    // Đóng mobile
     setMobileFilterOpen(false);
 
-    // Không cần scroll khi Reset
-    setShouldScrollAfterApply(false);
+    // Reset không cần scroll
+    setShouldScrollAfterChange(false);
   };
 
   /* =======================================================
@@ -380,14 +416,11 @@ export default function Home() {
           {/* Sort + Filter */}
 
           <div className="flex items-center w-full gap-3 sm:w-auto">
+            {/* SORT */}
+
             <select
               value={filters.sort}
-              onChange={(e) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  sort: e.target.value,
-                }))
-              }
+              onChange={handleSortChange}
               className="text-sm input-field sm:flex-none sm:w-auto"
             >
               <option value="price">Price: Low to High</option>
